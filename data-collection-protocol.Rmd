@@ -1,0 +1,25 @@
+---
+title: "Bivens Burn Data Collection Protocol"
+author: "W.W. Dillon"
+date: "3/22/2018"
+output: html_document
+---
+
+# Pre-fire data collection
+
+## Measure fuel height/litter depth
+
+
+## Collect fuel biomass
+
+1. At three locations in each plot harvest all fuels in a 25 cm x 25 cm area down to the mineral soil.
+
+    - Immediately bag and weigh samples to determine fresh weight
+    - Place samples in a paper bag and put them in the drying oven at ~60 ºC
+    - After at least 72 hours in the drying oven remove and weigh samples to determine dry weight
+
+
+# Day of fire data collection
+
+1. 
+
