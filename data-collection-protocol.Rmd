@@ -2,22 +2,48 @@
 title: "Bivens Burn Data Collection Protocol"
 author: "W.W. Dillon"
 date: "3/22/2018"
-output: html_document
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
 ---
 
 # Pre-fire data collection
 
-## Measure fuel height/litter depth
+Identify 3 locations in each plot where flame height sensors with fire temperature probes and loggers will be placed. These locations should be somewhat representative of the variation in fuel structure and type within the plot.
+
+    - **Place a flag at each location labeled with A, B, or C**
+
+At each of these locations measures of fuel height and litter depth will be made, and destructive fuel samples will be taken to estimate fuel load and fuel moisture.
+
+The flame height sensors with temperature probes will ultimately be offset from the destructive sampling area.
+
+For the collection of fuel mass, pre-label bags with the plot id number and the letter of the location (A, B, C).
+
+## 1. Measure fuel height/litter depth
+
+One to seven days before the planned burn record measurements of fuel height and litter depth at each plot.
+
+1. Within 50 cm of the locations identified for the flame height sensor take
+
+    - **3** measurements of herbaceous fuel height above the mineral soil, and 
+
+    - **3** measurements of litter depth from the top of the litter layer to the top of the mineral soil
+    
+2. Select 3 additional locations around the plot and measure the fuel height and litter depth. These locations should capture additional variation of fuel structure in the plot. 
 
 
-## Collect fuel biomass
+## 2. Collect fuel biomass (1-2 days prior to burn)
 
-1. At three locations in each plot harvest all fuels in a 25 cm x 25 cm area down to the mineral soil.
+Fuel collection should start after 11AM to ensure morning moisture has mostly evaporated.
 
-    - Immediately bag and weigh samples to determine fresh weight
-    - Place samples in a paper bag and put them in the drying oven at ~60 ºC
+At each of the 3 locations identified in each plot harvest all fuels in a 25 cm x 25 cm area down to the mineral soil. Where possible, keep the litter layer separate from the other fuels.
+
+    - Immediately weigh samples to determine fresh weight
+    - Place samples in a labeled paper bag and put them in the drying oven at ~60 ºC
     - After at least 72 hours in the drying oven remove and weigh samples to determine dry weight
 
+The difference between the fresh and dry weight will be used as the estimate of fuel moisture.
 
 # Day of fire data collection
 
