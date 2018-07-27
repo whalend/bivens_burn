@@ -507,6 +507,10 @@ temps_data$location[temps_data$box_number=="box12" & temps_data$time >= 60060] <
 str(temps_data)
 temps_data_noNA <- filter(temps_data, !is.na(plot_num))
 summary(temps_data_noNA)
+
+ggplot(filter(temps_data_noNA, box_number=="box1"), aes(time, probe_tempC)) +
+  geom_path()
+
 sessionInfo()
 
 
