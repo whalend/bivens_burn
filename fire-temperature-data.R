@@ -300,7 +300,7 @@ temps_data$plot_num[temps_data$box_number=="box6" & between(temps_data$time, 580
 temps_data$location[temps_data$box_number=="box6" & between(temps_data$time, 58020, 59900)] <- "B"
 
 temps_data$plot_num[temps_data$box_number=="box6" & temps_data$time>=60000] <- 38
-temps_data$location[temps_data$box_number=="box6" & temps_data$time>=60000)] <- "C"
+temps_data$location[temps_data$box_number=="box6" & temps_data$time>=60000] <- "C"
 
 # Box 7 ----
 filter(fire_plot_info, box_number=="box7")
@@ -508,8 +508,12 @@ str(temps_data)
 temps_data_noNA <- filter(temps_data, !is.na(plot_num))
 summary(temps_data_noNA)
 
-ggplot(filter(temps_data_noNA, box_number=="box1"), aes(time, probe_tempC)) +
-  geom_path()
+ggplot(filter(temps_data_noNA, box_number=="box1"), 
+       aes(time, probe_tempC, color = probe_ht)) +
+  geom_path(aes()) +
+  theme_classic()
+
+write_csv(temps_data_noNA, "data/temperatureID_data_noNA.csv")
 
 sessionInfo()
 
