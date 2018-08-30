@@ -1,0 +1,831 @@
+---
+title: "Bivens Burn Data Analysis"
+author: "W.W. Dillon"
+date: "8/4/2018"
+output: 
+  html_document:
+    toc: yes
+---
+
+
+```{r setup, message=FALSE, echo=F}
+
+knitr::opts_chunk$set(echo = F, warning = F, message = F)
+knitr::opts_chunk$set(fig.width = 7.5, fig.height = 7.5)
+
+```
+
+
+```{r load packages, message=FALSE}
+library(plyr)
+library(dplyr)
+library(tidyr)
+library(readxl)
+library(readr)
+library(ggplot2)
+library(viridis)
+```
+
+```{r load data, message=FALSE}
+
+temperatures <- read_csv("data/temperatureID_data_noNA.csv")
+treatments <- read_excel("data/Bivens.treatments.xlsx")
+flame_heights <- read_excel("data/FlameHts.xlsx")
+fuel_data <- read_excel("data/BivensBurnData_fuel.xlsx")
+
+```
+
+```{r global values}
+
+figure_width <-  7.5
+figure_height <- 7.5
+
+invasion_color <- scale_color_viridis(begin = .15, end = .9, option = "E", discrete = T)
+# invasion_color <- scale_color_manual(values = c("green","tan4"))
+invasion_fill <- scale_fill_viridis(begin = .15, end = .9, option = "E", discrete = T)
+
+def_theme <- theme(legend.title = element_blank(),
+            legend.text = element_text(size = 18),
+            # legend.position = "none",
+            axis.text = element_text(size = 18),
+            axis.title = element_text(size = 18),
+            plot.title = element_text(size = 20),
+            strip.background = element_blank(),
+            strip.text = element_text(size = 14),
+            panel.grid = element_blank()
+            )
+
+dodge <- position_dodge(width=0.9)
+
+```
+
+
+```{r treatment flame tree data}
+
+treatments <- treatments %>% 
+  mutate(water_trt = substr(Treatment, 1,1),
+         veg_trt = substr(Treatment,2,2),
+         water_trt = if_else(water_trt=="D", "drought", "ambient"),
+         water_trt = factor(water_trt, levels = c("ambient","drought")),
+         veg_trt = if_else(veg_trt=="C", "invaded", "reference"),
+         veg_trt = factor(veg_trt, levels = c("reference","invaded"))
+         )
+
+
+# fuel load data ####
+fuel_height <- fuel_data %>% 
+  select(Plot, Location, FH1:FH3) %>% 
+  gather(measure, fuel_height_cm, FH1, FH2, FH3) %>% 
+  mutate(measure = substr(measure, 3,3))
+
+litter_depth <- fuel_data %>% 
+  select(Plot, Location, LD1:LD3) %>% 
+  gather(measure, litter_depth_cm, LD1, LD2, LD3) %>% 
+  mutate(measure = substr(measure, 3,3))
+
+fuel_ht <- left_join(
+  fuel_height, 
+  litter_depth, 
+  by = c("Plot","Location", "measure")
+)
+
+fuel_ht <- left_join(
+  fuel_ht,
+  treatments,
+  by = "Plot"
+)
+
+
+fuel_mass <- fuel_data %>% 
+  select(Plot, Location, freshwt, drywt) %>% 
+  mutate(fuel_moisture = 100*(freshwt-drywt)/freshwt)
+
+fuel_mass <- left_join(
+  fuel_mass,
+  treatments,
+  by = "Plot"
+)
+
+fuel_measures <- left_join(
+  fuel_mass %>% 
+  group_by(Plot, Location) %>% 
+  summarise(avg_drywt = mean(drywt),
+            avg_moisture = mean(fuel_moisture)),
+  fuel_height %>% 
+  group_by(Plot, Location) %>% 
+  summarise(avg_fuel_ht_cm = mean(fuel_height_cm))
+)
+
+```
+
+# Fuel condition summary
+
+## Fuel load & moisture figures
+
+```{r fuel load fig}
+
+# fuel_ht
+# fuel_mass
+fuel_mass %>% 
+  group_by(water_trt, veg_trt) %>% 
+  select(drywt, fuel_moisture) %>%
+  skimr::skim(.)
+
+(fuel_load_fig <- ggplot(
+  fuel_mass %>% 
+    group_by(water_trt, veg_trt) %>% 
+    summarise(avg_drywt = mean(drywt*16),
+              nobs = length(drywt),
+              se_drywt = sd(drywt*16)/sqrt(nobs)), 
+  aes(water_trt, avg_drywt, fill = veg_trt)) +
+  invasion_color + 
+  invasion_fill +
+  geom_col(position = dodge) +
+  geom_errorbar(aes(ymax = avg_drywt + se_drywt, ymin = avg_drywt - se_drywt), position = dodge, width = 0) +
+  # geom_point(aes(color = veg_trt)) +
+  # stat_summary(aes(color = veg_trt),fun.data = "mean_se", geom = "pointrange", position = position_dodge(width = .2)) +
+  # facet_grid(probe_ht~.) +
+  theme_bw() +
+  def_theme +
+  xlab("") +
+  ylab(expression(paste("Fuel load (g ", {m}^-2, ")"), sep = "")) +
+  theme(legend.position = "top")
+)
+ggsave("figures/fuel_load_bar.png", height = 4, width = 5, dpi = 300)
+
+ggplot(fuel_mass, aes(water_trt, drywt*16, fill = veg_trt)) +
+  invasion_color + 
+  invasion_fill +
+  # geom_point(aes(color = veg_trt), position = "jitter", alpha = .3) +
+  # geom_col(position = dodge) +
+  # geom_errorbar(aes(ymax = avg_drywt + se_drywt, ymin = avg_drywt - se_drywt), position = dodge, width = 0) +
+  # geom_point(aes(color = veg_trt)) +
+  stat_summary(aes(color = veg_trt),fun.data = "mean_se", geom = "pointrange", position = position_dodge(width = .2), size = 1) +
+  # scale_y_continuous(limits = c(0,190)) +
+  theme_bw() +
+  def_theme +
+  xlab("") +
+  ylab(expression(paste("Fuel load (g ", {m}^-2, ")"), sep = "")) +
+  theme(legend.position = "top")
+
+
+ggplot(fuel_mass, aes(water_trt, drywt, fill = veg_trt)) +
+  # geom_violin(draw_quantiles = c(.25, .5, .75)) +
+  geom_boxplot(notch = F) +
+  invasion_fill +
+  theme_bw() +
+  def_theme +
+  xlab("") +
+  ylab("Fuel load (g)") +
+  theme(legend.position = "top")
+
+knitr::kable(fuel_mass %>% 
+    group_by(water_trt, veg_trt) %>% 
+    summarise(avg_drywt = mean(drywt*16),
+              nobs = length(drywt),
+              se_drywt = sd(drywt*16)/sqrt(nobs)),
+    digits = 2, caption = "Fuel load based on sample dry weight")
+
+```
+
+```{r fuel moisture fig}
+(fuel_moisture_fig <- ggplot(
+  fuel_mass %>% 
+    group_by(water_trt, veg_trt) %>% 
+    summarise(avg_moisture = mean(fuel_moisture),
+              nobs = length(fuel_moisture),
+              se_moisture = sd(fuel_moisture)/sqrt(nobs)),
+  aes(water_trt, avg_moisture, fill = veg_trt)) +
+  invasion_color + 
+  invasion_fill +
+  geom_col(position = dodge) +
+  geom_errorbar(aes(ymax = avg_moisture + se_moisture, ymin = avg_moisture - se_moisture), position = dodge, width = 0) +
+  theme_bw() +
+  def_theme +
+  xlab("") +
+  ylab("Fuel moisture (%)") +
+  theme(legend.position = "top")
+)
+ggsave("figures/fuel_moisture_bar.png", height = 4, width = 5, dpi = 300)
+
+ggplot(fuel_mass, aes(water_trt, fuel_moisture, color = veg_trt)) +
+  # geom_violin(draw_quantiles = c()) +
+  # geom_boxplot(notch = F) +
+  stat_summary(aes(color = veg_trt),fun.data = "mean_se", geom = "pointrange", position = position_dodge(width = .2), size = 1) +
+  invasion_fill +
+  invasion_color +
+  theme_bw() +
+  def_theme +
+  xlab("") +
+  ylab("Fuel moisture (%)") +
+  theme(legend.position = "top")
+
+
+knitr::kable(fuel_mass %>% 
+    group_by(water_trt, veg_trt) %>% 
+    summarise(avg_moisture = mean(fuel_moisture),
+              nobs = length(fuel_moisture),
+              se_moisture = sd(fuel_moisture)/sqrt(nobs)), 
+    digits = 2, caption = "Fuel moisture")
+
+```
+
+## Flame height figures
+```{r flame height figs}
+
+# flame height data ####
+flame_heights <- flame_heights %>% 
+  # mutate(avg_flame_ht = rowMeans(cbind(Flame_ht1,Flame_ht2), na.rm = T)) %>% 
+  gather(flameID, flameht_cm, Flame_ht1, Flame_ht2)
+
+flame_heights <- left_join(
+  flame_heights, treatments, by = "Plot"
+)
+
+flame_ht_location <- flame_heights %>% 
+  group_by(Plot, Location, water_trt, veg_trt) %>% 
+  summarise(avg_flameht_cm = mean(flameht_cm))
+
+skimr::skim(flame_heights %>% 
+              group_by(water_trt, veg_trt) %>% 
+              select(flameht_cm))
+
+
+flame_heights_trt <- flame_heights %>%
+  group_by(veg_trt, water_trt) %>% 
+  summarise(avg_flameht_cm = mean(flameht_cm, na.rm = T),
+            nobs = length(flameht_cm),
+            se_flameht = sd(flameht_cm)/sqrt(nobs))
+
+ # mean(c(72,82,233,272,246,195))
+ # sd(c(72,82,233,272,246,195))
+
+dodge <- position_dodge(width=0.9)
+ggplot(flame_heights_trt, aes(water_trt, avg_flameht_cm, fill = veg_trt)) +
+  # geom_boxplot(aes(fill = veg_trt), notch = F, alpha = .5) +
+  # geom_violin(aes(fill = veg_trt), alpha = .5) +
+  # geom_point(aes(color = veg_trt), position = "jitter") +
+  invasion_color + 
+  invasion_fill +
+  geom_col(position = dodge) +
+  geom_errorbar(aes(ymax = avg_flameht_cm + se_flameht, ymin = avg_flameht_cm - se_flameht), position = dodge, width = 0) +
+  # geom_point(aes(color = veg_trt)) +
+  # stat_summary(aes(color = veg_trt),fun.data = "mean_se", geom = "pointrange", position = position_dodge(width = .2)) +
+  # facet_grid(probe_ht~.) +
+  theme_bw() +
+  def_theme +
+  theme(legend.position = "top") +
+  xlab("") +
+  ylab("Flame height (cm)")
+ggsave("figures/flame_hts_bar.png", height = 4, width = 5, dpi = 300)
+
+ggplot(flame_heights, aes(water_trt, flameht_cm, fill = veg_trt)) +
+  # geom_point(aes(color = veg_trt), position = "jitter") +
+  invasion_color + 
+  invasion_fill +
+  stat_summary(aes(color = veg_trt),fun.data = "mean_se", geom = "pointrange", position = position_dodge(width = .2), size = .8) +
+  # facet_grid(probe_ht~.) +
+  theme_bw() +
+  def_theme +
+  theme(legend.position = "top") +
+  xlab("") +
+  ylab("Flame height (cm)")
+
+
+knitr::kable(flame_heights_trt, digits = 2)
+ 
+```
+
+Two observations of flame height at three locations in each plot, with ten plots in each treatment group.
+
+# Temperature Data
+```{r summarize temperature data}
+
+temperatures <- temperatures %>% 
+  rename(Plot = plot_num, 
+         Box_ID = box_number, 
+         Location = location) %>% 
+  mutate(Box_ID = as.numeric(substr(Box_ID, start = 4, stop = nchar(Box_ID))))
+
+temps_abv_100_data <- temperatures %>% 
+  group_by(Plot, Location, probe_ht) %>% 
+  filter(probe_tempC >= 100) %>% 
+  summarise(seconds_abv_100 = length(probe_tempC),
+            heat_flux_abv_100 = sum(probe_tempC)
+            ) %>% 
+  ungroup(.)
+temps_abv_100_data <- left_join(
+  temps_abv_100_data,
+  flame_ht_location
+)
+temps_abv_100_data <- left_join(
+  temps_abv_100_data,
+  fuel_measures
+)
+temps_abv_100_data %>% 
+  group_by(water_trt, veg_trt, probe_ht) %>% 
+  select(seconds_abv_100) %>% 
+  skimr::skim(.)
+
+max_temperatures <- temperatures %>% 
+  group_by(Plot, Location, probe_ht) %>% 
+  arrange(desc(probe_tempC)) %>% 
+  summarise(max_temp = max(probe_tempC),
+            max_temp_avg5 = mean(probe_tempC[1:5])) %>% 
+  ungroup(.)
+max_temperatures <- left_join(
+  max_temperatures,
+  flame_ht_location
+)
+max_temperatures <- left_join(
+  max_temperatures,
+  fuel_measures
+)
+max_temperatures %>% 
+  group_by(water_trt, veg_trt, probe_ht) %>% 
+  select(max_temp) %>% 
+  skimr::skim(.)
+
+```
+## Time >100 ºC figures
+```{r temps above 100 figs}
+
+ggplot(temps_abv_100_data %>% 
+         group_by(probe_ht, veg_trt, water_trt) %>% 
+         summarise(avg_s_abv100 = mean(seconds_abv_100),
+                   nobs = length(seconds_abv_100),
+                   se_s_abv100 = sd(seconds_abv_100/sqrt(nobs))), 
+       aes(water_trt, avg_s_abv100, fill = veg_trt)) +
+  geom_col(position = dodge) +
+  geom_errorbar(aes(ymax = avg_s_abv100 + se_s_abv100, ymin = avg_s_abv100 - se_s_abv100), position = dodge, width = 0) +
+  invasion_fill +
+  facet_grid(.~probe_ht) +
+  theme_bw() + 
+  def_theme +
+  ylab("Seconds >100 ºC") +
+  xlab("") +
+  theme(legend.position = "top")
+ggsave("figures/seconds_abv100_bar.png", height = 4, width = 9, dpi = 300)
+
+ggplot(temps_abv_100_data, aes(water_trt, seconds_abv_100)) +
+  # geom_point(aes(color = veg_trt), alpha = .2, position = "jitter") +
+  stat_summary(aes(color = veg_trt), fun.data = "mean_se", geom = "pointrange", position = position_dodge(width = .2), size = 1) +
+  # geom_boxplot(aes(color = veg_trt)) +
+  # scale_y_continuous(breaks = c(0, 100, 150, 200), labels = c("0","100","150","200")) +
+  invasion_color +
+  invasion_fill +
+  facet_wrap(~probe_ht) +
+  theme_bw() +
+  def_theme +
+  ylab("Seconds >100 ºC") +
+  xlab("") +
+  theme(legend.position = "top")
+ggsave("figures/seconds_abv100.png", height = 4, width = 9, dpi = 300)
+
+ggplot(filter(temperatures, Plot==8, Box_ID==9,probe_ht=="0cm"),
+       aes(time, probe_tempC)) +
+  geom_path() +
+  geom_hline(yintercept = 100)
+
+  # theme_classic() 
+
+ggplot(temps_abv_100_data, aes(water_trt, heat_flux_abv_100)) +
+  stat_summary(aes(color = veg_trt), fun.data = "mean_se", geom = "pointrange", position = position_dodge(width = .2), size = 1) +
+  facet_grid(.~probe_ht) +
+  invasion_color +
+  theme_bw() +
+  def_theme +
+  ylab("Heat flux >100 ºC (s * temperature)") +
+  xlab("") +
+  theme(legend.position = c(.85,.8))
+
+
+# ggplot(temps_abv_100_data, aes(avg_drywt, seconds_abv_100)) +
+#   geom_point(aes(color = veg_trt)) +
+#   geom_smooth(aes(color = veg_trt), se = F) +
+#   facet_grid(.~probe_ht, scales = "free_y") +
+#   theme_bw() +
+#   def_theme
+
+knitr::kable(temps_abv_100_data %>% 
+         group_by(probe_ht, veg_trt, water_trt) %>% 
+         summarise(avg_s_abv100 = mean(seconds_abv_100),
+                   nobs = length(seconds_abv_100),
+                   se_s_abv100 = sd(seconds_abv_100/sqrt(nobs))),
+         digits = 2, caption = "Seconds above 100 ºC by treatment and probe height")
+
+```
+
+## Max temp figures
+```{r max temp figs}
+
+ggplot(max_temperatures %>% 
+         group_by(probe_ht, water_trt, veg_trt) %>% 
+         summarise(avg_max_temp = mean(max_temp),
+                   nobs = length(max_temp),
+                   se_max_temp = sd(max_temp)/sqrt(nobs)), 
+       aes(water_trt, avg_max_temp, fill = veg_trt)) +
+  
+  # stat_summary(aes(color = veg_trt), 
+               # fun.data = "mean_se", geom = "pointrange", position = position_dodge(width = .2)) +
+  geom_col(position = dodge) +
+  geom_errorbar(aes(ymax = avg_max_temp + se_max_temp, ymin = avg_max_temp - se_max_temp), position = dodge, width = 0) +
+  invasion_fill +
+  facet_grid(.~probe_ht) +
+  theme_bw() + 
+  def_theme +
+  ylab("Maximum temperature (ºC)") +
+  xlab("") +
+  theme(legend.position = "top")
+ggsave("figures/max_temp_bars.png", height = 4, width = 9, dpi = 300)
+
+
+ggplot(max_temperatures, aes(water_trt, max_temp)) +
+  stat_summary(aes(color = veg_trt), fun.data = "mean_se", geom = "pointrange", position = position_dodge(width = .2), size = 1) +
+  invasion_color +
+  facet_grid(.~probe_ht) +
+  theme_bw() + 
+  def_theme +
+  ylab("Maximum temperature (ºC)") +
+  xlab("") +
+  theme(legend.position = "top")
+ggsave("figures/max_temp.png", height = 4, width = 9, dpi = 300)
+
+ggplot(max_temperatures, aes((avg_drywt*16)/1000, max_temp)) +
+  geom_point(aes(color = veg_trt), alpha = .5) +
+  invasion_color +
+  invasion_fill +
+  geom_smooth(aes(color = veg_trt, fill = veg_trt), alpha = .2, method = "lm") +
+  # stat_summary(aes(color = veg_trt), 
+  #              fun.data = "mean_se", geom = "pointrange", position = position_dodge(width = .2)) +
+  # stat_summary(aes(y = max_temp_avg5, color = veg_trt), 
+  #              fun.data = "mean_se", geom = "pointrange", shape = 22, 
+  #              position = position_dodge(width = .4)) +
+  facet_grid(.~probe_ht) +
+  theme_bw() +
+  def_theme +
+  theme(legend.position = "top") +
+  xlab(expression(paste("Fuel load (kg ", {m}^-2, ")"), sep = "")) +
+  ylab("Maximum temperature (ºC)")
+ggsave("figures/max_temp_scatter.png", height = 4, width = 9, dpi = 300)
+
+knitr::kable(max_temperatures %>% 
+         group_by(probe_ht, water_trt, veg_trt) %>% 
+         summarise(avg_max_temp = mean(max_temp),
+                   nobs = length(max_temp),
+                   se_max_temp = sd(max_temp)/sqrt(nobs)), 
+         digits = 2, caption = "Maximum temperature by treatment and probe height")
+
+```
+
+## Max temp regressions: 50cm probe height
+```{r max temp regressions}
+
+max_temps50_data <- max_temperatures %>% 
+  filter(probe_ht=="50cm")
+
+max_temp50_lme1 <- lmerTest::lmer(max_temp ~ avg_drywt*veg_trt + avg_drywt*water_trt + avg_moisture + water_trt + (1|Plot), data = max_temps50_data)
+summary(max_temp50_lme1)
+car::Anova(max_temp50_lme1, type = "II", test = "F")
+
+max_temp50_lme2 <- lmerTest::lmer(max_temp ~ avg_drywt + veg_trt + avg_moisture + water_trt + (1|Plot), data = max_temps50_data)
+summary(max_temp50_lme2)
+anova(max_temp50_lme1,max_temp50_lme2)
+car::Anova(max_temp50_lme2)
+
+max_temp50_lme3 <- lmerTest::lmer(max_temp ~ avg_drywt + veg_trt + water_trt + avg_fuel_ht_cm + (1|Plot), data = max_temps50_data)
+summary(max_temp50_lme3)
+car::Anova(max_temp50_lme3)
+
+max_temp50_lme4a <- lmerTest::lmer(max_temp ~ avg_drywt*veg_trt + avg_fuel_ht_cm + (1|Plot), data = max_temps50_data)
+summary(max_temp50_lme4a)
+car::Anova(max_temp50_lme4a)
+
+max_temp50_lme4 <- lme4::lmer(max_temp ~ avg_drywt + veg_trt + avg_fuel_ht_cm + (1|Plot), data = max_temps50_data)
+summary(max_temp50_lme4)
+car::Anova(max_temp50_lme4, type = "II")
+
+sjPlot::plot_model(
+  max_temp50_lme4, type = "est", 
+  show.values = T, vline.color = "gray90", colors = "viridis") +
+  theme_bw()
+
+sjPlot::plot_model(
+  max_temp50_lme4, type = "std2", show.values = T, 
+  vline.color = "gray90", colors = "viridis",
+  title = "Standardized max temp (divided by 2*sd") +
+  theme_bw()
+MuMIn::r.squaredGLMM(max_temp50_lme4)
+
+max_temps50_data_plot <- max_temps50_data %>% 
+  group_by(Plot, water_trt, veg_trt) %>% 
+  summarise(avg_max_temp = mean(max_temp),
+            avg_drywt = mean(avg_drywt),
+            avg_moisture = mean(avg_moisture),
+            avg_fuel_ht_cm = mean(avg_fuel_ht_cm)) %>% 
+  ungroup(.)
+
+max_temps50_lm <- lm(avg_max_temp ~ avg_drywt + veg_trt, data = max_temps50_data_plot)
+plot(max_temps50_lm)
+summary(max_temps50_lm)
+
+```
+
+## Time >100 ºC regressions: 50cm probe height
+```{r time abv 100 regressions}
+
+temps_abv100_50data <- temps_abv_100_data %>% 
+  filter(probe_ht=="50cm")
+
+abv100_lme1 <- lmerTest::lmer(seconds_abv_100 ~ avg_drywt*veg_trt + avg_moisture + avg_fuel_ht_cm + water_trt + (1|Plot), data = temps_abv100_50data)
+summary(abv100_lme1)
+
+abv100_lme2 <- lmerTest::lmer(seconds_abv_100 ~ avg_drywt*veg_trt + avg_moisture + water_trt + (1|Plot), data = temps_abv100_50data)
+summary(abv100_lme2)
+
+abv100_lme3 <- lmerTest::lmer(seconds_abv_100 ~ avg_drywt*veg_trt + avg_moisture + (1|Plot), data = temps_abv100_50data)
+summary(abv100_lme3)
+
+abv100_lme4 <- lmerTest::lmer(seconds_abv_100 ~ avg_drywt*veg_trt + (1|Plot), data = temps_abv100_50data)
+summary(abv100_lme4)
+
+plot(abv100_lme4)
+
+sjPlot::plot_model(abv100_lme4, type = "est", show.values = T, vline.color = "gray90", colors = "viridis") +
+  theme_bw()
+MuMIn::r.squaredGLMM(abv100_lme4)
+
+```
+
+# Tree Damage & Survival
+
+```{r tree survival data}
+
+tree_survival <- read_excel("data/LLP_SurvHtDiam_2018fixedDH.xlsx")
+summary(tree_survival)
+
+tree_survival$dbh_cm <- as.numeric(tree_survival$dbh_cm)
+tree_survival$diam1_mm <- as.numeric(tree_survival$diam1_mm)
+tree_survival$ht1_m <- as.numeric(tree_survival$ht1_m)
+tree_survival$pct_brown <- as.numeric(tree_survival$pct_brown)
+tree_survival$pct_brown[is.na(tree_survival$pct_brown)] <- .5
+
+tree_survival$dead_limbs[tree_survival$total_limbs==73] <- 6
+tree_survival$total_limbs[tree_survival$total_limbs==73] <- 13
+tree_survival$total_limbs[tree_survival$dead_limbs==17] <- 17
+tree_survival$dead_limbs[tree_survival$dead_limbs==17] <- 1
+tree_survival$total_limbs[tree_survival$dead_limbs==12] <- 12
+tree_survival$dead_limbs[tree_survival$dead_limbs==12] <- 0
+tree_survival$total_limbs[tree_survival$char_ht==110 & tree_survival$dead_limbs==4] <- 4
+tree_survival$dead_limbs[tree_survival$char_ht==110 & tree_survival$dead_limbs==4] <- 2
+
+# write_csv(tree_survival, "data/LLP_Surv_2018_corrected.csv")
+
+
+# tree damage data ####
+
+tree_survival <- tree_survival %>% 
+  filter(!is.na(pct_brown)) %>% 
+  select(-Ind, -Row, -Column)
+summary(tree_survival)
+
+tree_survival %>% filter(is.na(diam2_cm))
+
+unique(tree_survival$dbh_cm)
+
+# summary(tree_survival)
+tree_dmg <- tree_survival %>% 
+  filter(!is.na(total_limbs)) %>% 
+  select(Block, Plot, pct_brown, dead_limbs, total_limbs, char_ht, ht2_cm, dbh_cm) %>% 
+  mutate(tree_id = seq_len(nrow(.)),
+         pct_dead_limbs = 100*dead_limbs/total_limbs)
+
+tree_dmg <- left_join(
+  tree_dmg,
+  select(treatments, -Treatment)
+)
+tree_dmg %>% 
+  group_by(veg_trt, water_trt) %>% 
+  select(-Block, -Plot) %>% 
+  skimr::skim(.)
+
+
+```
+
+## Percent dead limbs
+```{r pct dead limbs figs}
+
+ggplot(tree_dmg, aes(water_trt, pct_dead_limbs, color = veg_trt)) +
+  stat_summary(fun.data = "mean_se", geom = "pointrange", position = position_dodge(width = .2), size = 1) +
+  invasion_color +
+  theme_bw() +
+  def_theme +
+  xlab("") +
+  ylab("Dead limbs (%)") +
+  theme(legend.position = "top")
+ggsave("figures/pct_dead_limbs.png", height = 4, width = 5, dpi = 300)
+
+ggplot(tree_dmg %>% 
+         group_by(veg_trt, water_trt) %>% 
+         summarise(avg_pct_dead_limbs = mean(pct_dead_limbs),
+                   nobs = length(pct_dead_limbs),
+                   se_dead_limbs = sd(pct_dead_limbs, na.rm = T)/sqrt(nobs)), 
+       aes(water_trt, avg_pct_dead_limbs, fill = veg_trt)) +
+  geom_col(position = dodge) + 
+  geom_errorbar(aes(ymax = avg_pct_dead_limbs+se_dead_limbs, ymin = avg_pct_dead_limbs-se_dead_limbs), position = dodge, width = 0) +
+  # stat_summary(fun.data = "mean_se", geom = "pointrange", position = position_dodge(width = .2)) +
+  # invasion_color +
+  invasion_fill +
+  theme_bw() +
+  def_theme +
+  xlab("") +
+  ylab("Dead limbs (%)") +
+  theme(legend.position = "top")
+ggsave("figures/pct_dead_limbs_bar.png", height = 4, width = 5, dpi = 300)
+
+knitr::kable(tree_dmg %>% 
+         group_by(veg_trt, water_trt) %>% 
+         summarise(avg_pct_dead_limbs = mean(pct_dead_limbs),
+                   nobs = length(pct_dead_limbs),
+                   se_dead_limbs = sd(pct_dead_limbs, na.rm = T)/sqrt(nobs))
+         )
+  
+```
+
+## Percent canopy brown
+Exactly the same pattern as percent dead limbs.
+```{r pct brown figs}
+
+ggplot(tree_dmg, aes(water_trt, pct_brown, color = veg_trt)) +
+  stat_summary(fun.data = "mean_se", geom = "pointrange", position = position_dodge(width = .2), size = 1) +
+  invasion_color +
+  theme_bw() +
+  def_theme +
+  xlab("") +
+  ylab("% Brown") +
+  theme(legend.position = "top")
+ggsave("figures/pct_brown.png", height = 4, width = 5, dpi = 300)
+
+ggplot(tree_dmg %>% 
+         group_by(veg_trt, water_trt) %>% 
+         summarise(avg_pct_brown = mean(pct_brown),
+                   nobs = length(pct_dead_limbs),
+                   se_pct_brown = sd(pct_brown, na.rm = T)/sqrt(nobs)), 
+       aes(water_trt, avg_pct_brown, fill = veg_trt)) +
+  geom_col(position = dodge) + 
+  geom_errorbar(aes(ymax = avg_pct_brown+se_pct_brown, ymin = avg_pct_brown-se_pct_brown), position = dodge, width = 0) +
+  # stat_summary(fun.data = "mean_se", geom = "pointrange", position = position_dodge(width = .2)) +
+  # invasion_color +
+  invasion_fill +
+  theme_bw() +
+  def_theme +
+  xlab("") +
+  ylab("% Brown") +
+  theme(legend.position = "top")
+ggsave("figures/pct_brown_bar.png", height = 4, width = 5, dpi = 300)
+
+knitr::kable(tree_dmg %>% 
+         group_by(veg_trt, water_trt) %>% 
+         summarise(avg_pct_brown = mean(pct_brown),
+                   nobs = length(pct_dead_limbs),
+                   se_pct_brown = sd(pct_brown, na.rm = T)/sqrt(nobs)))
+
+```
+
+## Post-fire tree survival
+```{r llp survival}
+
+tree_dmg <- tree_dmg %>% 
+  mutate(alive = if_else(pct_dead_limbs==100, 0, 1),
+         dead = if_else(pct_dead_limbs==100, 1, 0),
+         survival = if_else(pct_dead_limbs==100, 0, 1))
+
+ggplot(tree_dmg, aes(water_trt, survival*100, color = veg_trt)) +
+  # geom_boxplot(aes(color = veg_trt)) +
+  # geom_point(aes(color = veg_trt), position = "jitter") +
+  stat_summary(fun.data = "mean_se", geom = "pointrange", position = position_dodge(width = .2), size = 1) +
+  invasion_fill +
+  invasion_color +
+  theme_bw() +
+  def_theme +
+  xlab("") +
+  ylab("% survival") +
+  theme(legend.position = "top")
+
+knitr::kable(tree_dmg %>% 
+         group_by(veg_trt, water_trt) %>% 
+         summarise(prop_survival = mean(survival),
+                   nobs = length(survival),
+                   se_surv = sd(survival, na.rm = T)/sqrt(nobs)))
+
+tree_dmg2 <- tree_dmg %>% 
+  filter(veg_trt != "reference", water_trt != "drought")
+
+tree_dmg2 <- anti_join(tree_dmg,tree_dmg2)
+
+surv_glm1 <- glm(cbind(alive,dead) ~ char_ht + ht2_cm + veg_trt + water_trt, family = "quasibinomial", data = tree_dmg2)
+summary(surv_glm1)
+# car::Anova(surv_glm1, type = "III", test = "LR")
+
+surv_glmer1 <- lme4::glmer(cbind(alive,dead) ~ char_ht + ht2_cm + veg_trt + water_trt + (1|Plot), family = "binomial", data = tree_dmg2)
+summary(surv_glmer1)
+car::Anova(surv_glmer1, type = "II")
+
+```
+
+## Char height
+
+```{r char height fig}
+
+ggplot(tree_dmg %>% 
+         group_by(veg_trt, water_trt) %>% 
+         summarise(avg_ht = mean(char_ht),
+                   nobs = length(char_ht),
+                   se = sd(ht2_cm, na.rm = T)/sqrt(nobs)), 
+       aes(water_trt, avg_ht, fill = veg_trt)) +
+  geom_col(position = dodge) + 
+  geom_errorbar(aes(ymax = avg_ht+se, ymin = avg_ht-se), position = dodge, width = 0) + 
+  invasion_fill +
+  invasion_color +
+  theme_bw() +
+  def_theme +
+  xlab("") +
+  ylab("Char height (cm)") +
+  theme(legend.position = "top")
+
+knitr::kable(tree_dmg %>% 
+         group_by(veg_trt, water_trt) %>% 
+         summarise(avg_ht = mean(char_ht),
+                   nobs = length(char_ht),
+                   se = sd(ht2_cm, na.rm = T)/sqrt(nobs)),
+         digits = 2, caption = "Average char height on trees")
+
+```
+
+
+## Tree height
+
+```{r tree height fig}
+
+ggplot(tree_dmg %>% 
+         group_by(veg_trt, water_trt) %>% 
+         summarise(avg_ht = mean(ht2_cm),
+                   nobs = length(ht2_cm),
+                   se = sd(ht2_cm, na.rm = T)/sqrt(nobs)), 
+       aes(water_trt, avg_ht, fill = veg_trt)) +
+  geom_col(position = dodge) + 
+  geom_errorbar(aes(ymax = avg_ht+se, ymin = avg_ht-se), position = dodge, width = 0) + 
+  # geom_boxplot(aes(color = veg_trt), notch = T) +
+  # geom_point(aes(color = veg_trt), position = position_dodge(width = .75), alpha = .5, shape = 22) +
+  # stat_summary(fun.data = "mean_se", geom = "pointrange", position = position_dodge(width = .2), size = 1) +
+  invasion_fill +
+  invasion_color +
+  theme_bw() +
+  def_theme +
+  xlab("") +
+  ylab("Tree height (cm)") +
+  theme(legend.position = "top")
+
+knitr::kable(tree_dmg %>% 
+         group_by(veg_trt, water_trt) %>% 
+         summarise(avg_ht = mean(ht2_cm),
+                   nobs = length(ht2_cm),
+                   se = sd(ht2_cm, na.rm = T)/sqrt(nobs)),
+         digits = 2, caption = "Average tree height")
+
+```
+
+```{r tree height lm}
+
+treeht_lm1 <- lm(ht2_cm ~ veg_trt*water_trt, data = tree_dmg)
+
+summary(treeht_lm1)
+
+sjPlot::plot_model(
+  treeht_lm1, 
+  show.values = T, show.data = T,
+  vline.color = "gray90",
+  value.size = 5, dot.size = 3.5, line.size = 1, value.offset = .2,
+  colors = "viridis",
+  title = "Tree height (cm)", 
+  axis.labels = c("invaded","drought*invaded","drought")
+  ) +
+  theme_bw()+
+  theme(axis.text = element_text(size = 12),
+        panel.grid = element_blank())
+
+```
+
+The model below with plot as a random effect gives very similar estimates for the treatment effects as the model with no random effect above.
+
+```{r tree height lmer}
+
+treeht_lmer1 <- lmerTest::lmer(ht2_cm ~ veg_trt*water_trt + (1|Plot), data = tree_dmg)
+summary(treeht_lmer1)
+
+sjPlot::plot_model(treeht_lmer1, type = "est", show.values = T, vline.color = "gray90", colors = "viridis") +
+  theme_bw()
+
+```
+
+
