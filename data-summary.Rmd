@@ -1,7 +1,7 @@
 ---
 title: "Bivens Burn Data Analysis"
 author: "W.W. Dillon"
-date: "8/4/2018"
+date: "`r Sys.time()`"
 output: 
   html_document:
     toc: yes
@@ -828,4 +828,8 @@ sjPlot::plot_model(treeht_lmer1, type = "est", show.values = T, vline.color = "g
 
 ```
 
+
+```{bash}
+cp  data-summary.html ~/Dropbox\ \(UF\)/UF\ Team\ Folder/Bivens-burn/
+```
 
