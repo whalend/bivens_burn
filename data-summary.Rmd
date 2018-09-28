@@ -40,10 +40,14 @@ fuel_data <- read_excel("data/BivensBurnData_fuel.xlsx")
 figure_width <-  7.5
 figure_height <- 7.5
 
+# define color ####
 invasion_color <- scale_color_viridis(begin = .15, end = .9, option = "E", discrete = T)
-# invasion_color <- scale_color_manual(values = c("green","tan4"))
 invasion_fill <- scale_fill_viridis(begin = .15, end = .9, option = "E", discrete = T)
 
+invasion_color <- scale_color_manual(values = c("blue","red"))
+invasion_fill <- scale_fill_manual(values = c("blue","red"))
+
+# define theme ####
 def_theme <- theme(legend.title = element_blank(),
             legend.text = element_text(size = 18),
             # legend.position = "none",
@@ -436,7 +440,9 @@ ggplot(max_temperatures %>%
   def_theme +
   ylab("Maximum temperature (ºC)") +
   xlab("") +
-  theme(legend.position = "top")
+  theme(legend.position = "top",
+        legend.direction = "vertical") +
+  NULL
 ggsave("figures/max_temp_bars.png", height = 4, width = 9, dpi = 300)
 
 
@@ -476,13 +482,22 @@ knitr::kable(max_temperatures %>%
                    se_max_temp = sd(max_temp)/sqrt(nobs)), 
          digits = 2, caption = "Maximum temperature by treatment and probe height")
 
+knitr::kable(max_temperatures %>% 
+  group_by(probe_ht, veg_trt) %>% 
+  summarise(avg_max_temp = mean(max_temp),
+            nobs = length(max_temp),
+            se_max_temp = sd(max_temp)/sqrt(nobs),
+            maximum_temp = max(max_temp)),
+  digits = 2)
+
 ```
 
-## Max temp regressions: 50cm probe height
-```{r max temp regressions}
+## Max temp regressions
+```{r max temp 50cm regressions}
 
 max_temps50_data <- max_temperatures %>% 
   filter(probe_ht=="50cm")
+summary(max_temps50_data)
 
 max_temp50_lme1 <- lmerTest::lmer(max_temp ~ avg_drywt*veg_trt + avg_drywt*water_trt + avg_moisture + water_trt + (1|Plot), data = max_temps50_data)
 summary(max_temp50_lme1)
@@ -501,7 +516,7 @@ max_temp50_lme4a <- lmerTest::lmer(max_temp ~ avg_drywt*veg_trt + avg_fuel_ht_cm
 summary(max_temp50_lme4a)
 car::Anova(max_temp50_lme4a)
 
-max_temp50_lme4 <- lme4::lmer(max_temp ~ avg_drywt + veg_trt + avg_fuel_ht_cm + (1|Plot), data = max_temps50_data)
+max_temp50_lme4 <- lme4::lmer(max_temp ~ avg_drywt + veg_trt + (1|Plot), data = max_temps50_data)
 summary(max_temp50_lme4)
 car::Anova(max_temp50_lme4, type = "II")
 
@@ -510,12 +525,24 @@ sjPlot::plot_model(
   show.values = T, vline.color = "gray90", colors = "viridis") +
   theme_bw()
 
+sjPlot::plot_model(max_temp50_lme4, type = "pred", terms = c("avg_drywt","veg_trt"), show.data = T)
+
+# min(max_temps50_data$avg_drywt)*1.14 + 190
+# median(max_temps50_data$avg_drywt)*1.14 + 190
+# max(max_temps50_data$avg_drywt)*1.14 + 190
+# min(max_temps50_data$avg_drywt)*1.14 + 190 + 328.26
+# median(max_temps50_data$avg_drywt)*1.14 + 190 + 328.26
+# max(max_temps50_data$avg_drywt)*1.14 + 190 + 328.26
+
 sjPlot::plot_model(
   max_temp50_lme4, type = "std2", show.values = T, 
-  vline.color = "gray90", colors = "viridis",
-  title = "Standardized max temp (divided by 2*sd") +
+  vline.color = "black", colors = "viridis",
+  title = "Standardized coefficients for max temp (divided by 2*sd)") +
   theme_bw()
 MuMIn::r.squaredGLMM(max_temp50_lme4)
+
+lm1 <- lm(max_temp ~ avg_drywt + veg_trt, data = max_temps50_data)
+summary(lm1)
 
 max_temps50_data_plot <- max_temps50_data %>% 
   group_by(Plot, water_trt, veg_trt) %>% 
@@ -526,8 +553,52 @@ max_temps50_data_plot <- max_temps50_data %>%
   ungroup(.)
 
 max_temps50_lm <- lm(avg_max_temp ~ avg_drywt + veg_trt, data = max_temps50_data_plot)
-plot(max_temps50_lm)
+# plot(max_temps50_lm)
 summary(max_temps50_lm)
+
+ggplot(max_temps50_data_plot, aes(avg_drywt, avg_max_temp)) +
+  geom_point(aes(color = veg_trt)) +
+  geom_smooth(aes(fill = veg_trt, color = veg_trt), method = "lm") +
+  invasion_color +
+  invasion_fill +
+  theme_classic() +
+  NULL
+  
+```
+
+```{r max temp 25cm regressions}
+
+max_temps25_data <- max_temperatures %>% 
+  filter(probe_ht=="25cm")
+
+max_temp25_lme4 <- lme4::lmer(max_temp ~ avg_drywt + veg_trt + (1|Plot), data = max_temps25_data)
+summary(max_temp25_lme4)
+car::Anova(max_temp25_lme4, type = "II")
+MuMIn::r.squaredGLMM(max_temp25_lme4)
+
+sjPlot::plot_model(
+  max_temp25_lme4, type = "est", 
+  show.values = T, vline.color = "gray90", colors = "viridis") +
+  theme_bw()
+
+
+```
+
+```{r max temp 0cm regressions}
+
+max_temps0_data <- max_temperatures %>% 
+  filter(probe_ht=="0cm")
+
+max_temp0_lme4 <- lme4::lmer(max_temp ~ avg_drywt + veg_trt + (1|Plot), data = max_temps0_data)
+summary(max_temp0_lme4)
+car::Anova(max_temp0_lme4, type = "II")
+MuMIn::r.squaredGLMM(max_temp0_lme4)
+
+sjPlot::plot_model(
+  max_temp0_lme4, type = "est", 
+  show.values = T, vline.color = "gray90", colors = "viridis") +
+  theme_bw()
+
 
 ```
 
