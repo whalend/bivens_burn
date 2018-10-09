@@ -4,7 +4,9 @@ author: "W.W. Dillon"
 date: "`r Sys.time()`"
 output: 
   html_document:
-    toc: yes
+    toc: true
+    toc_float: 
+      collapsed: false
 ---
 
 
@@ -871,6 +873,9 @@ knitr::kable(tree_dmg %>%
 treeht_lm1 <- lm(ht2_cm ~ veg_trt*water_trt, data = tree_dmg)
 
 summary(treeht_lm1)
+car::Anova(treeht_lm1, type = "III")
+
+sjPlot::plot_model(treeht_lm1, type = "diag")
 
 sjPlot::plot_model(
   treeht_lm1, 
@@ -893,6 +898,8 @@ The model below with plot as a random effect gives very similar estimates for th
 
 treeht_lmer1 <- lmerTest::lmer(ht2_cm ~ veg_trt*water_trt + (1|Plot), data = tree_dmg)
 summary(treeht_lmer1)
+
+car::Anova(treeht_lmer1, type = "2")
 
 sjPlot::plot_model(treeht_lmer1, type = "est", show.values = T, vline.color = "gray90", colors = "viridis") +
   theme_bw()
