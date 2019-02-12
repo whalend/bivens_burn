@@ -37,8 +37,8 @@ tree_survival$diam2_mm[is.na(tree_survival$diam2_mm)] <- tree_survival$diam1_mm[
 tree_survival$dead_limbs[tree_survival$total_limbs==73] <- 6
 tree_survival$total_limbs[tree_survival$total_limbs==73] <- 13
 
-hist(tree_survival$dbh_cm)
-filter(tree_survival, dbh_cm>10)
+# hist(tree_survival$dbh_cm)
+# filter(tree_survival, dbh_cm>10)
 tree_survival$dbh_cm[tree_survival$dbh_cm>10] <- 3.6
 # summary(tree_survival)
 
