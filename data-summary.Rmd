@@ -1,13 +1,21 @@
 ---
 title: "Bivens Burn Data Analysis"
 author: "W.W. Dillon"
-date: "`r Sys.time()`"
+date: "`r Sys.date()`"
 output: 
   html_document:
     toc: true
     toc_float: 
       collapsed: false
 ---
+
+Target Journal:
+
+Short-ish, high-impact
+
+Neobiota comments: serotiny of long-leaf, fire-effects at different times, fire size~intensity, total diff in number of living trees in the plots at the end
+
+Relationship between height and survival - tree level analysis
 
 
 ```{r setup, message=FALSE, echo=F}
@@ -634,35 +642,14 @@ MuMIn::r.squaredGLMM(abv100_lme4)
 
 ```{r tree survival data}
 
-tree_survival <- read_excel("data/LLP_SurvHtDiam_2018fixedDH.xlsx")
-summary(tree_survival)
-
-tree_survival$dbh_cm <- as.numeric(tree_survival$dbh_cm)
-tree_survival$diam1_mm <- as.numeric(tree_survival$diam1_mm)
-tree_survival$ht1_m <- as.numeric(tree_survival$ht1_m)
-tree_survival$pct_brown <- as.numeric(tree_survival$pct_brown)
-tree_survival$pct_brown[is.na(tree_survival$pct_brown)] <- .5
-
-tree_survival$dead_limbs[tree_survival$total_limbs==73] <- 6
-tree_survival$total_limbs[tree_survival$total_limbs==73] <- 13
-tree_survival$total_limbs[tree_survival$dead_limbs==17] <- 17
-tree_survival$dead_limbs[tree_survival$dead_limbs==17] <- 1
-tree_survival$total_limbs[tree_survival$dead_limbs==12] <- 12
-tree_survival$dead_limbs[tree_survival$dead_limbs==12] <- 0
-tree_survival$total_limbs[tree_survival$char_ht==110 & tree_survival$dead_limbs==4] <- 4
-tree_survival$dead_limbs[tree_survival$char_ht==110 & tree_survival$dead_limbs==4] <- 2
-
-# write_csv(tree_survival, "data/LLP_Surv_2018_corrected.csv")
-
-
 # tree damage data ####
 
-tree_survival <- tree_survival %>% 
-  filter(!is.na(pct_brown)) %>% 
-  select(-Ind, -Row, -Column)
-summary(tree_survival)
-
-tree_survival %>% filter(is.na(diam2_cm))
+# tree_survival <- tree_survival %>% 
+#   filter(!is.na(pct_brown)) %>% 
+#   select(-Ind, -Row, -Column)
+# summary(tree_survival)
+# 
+# tree_survival %>% filter(is.na(diam2_mm))
 
 unique(tree_survival$dbh_cm)
 
