@@ -508,10 +508,18 @@ str(temps_data)
 temps_data_noNA <- filter(temps_data, !is.na(plot_num))
 summary(temps_data_noNA)
 
-ggplot(filter(temps_data_noNA, box_number=="box1"), 
-       aes(time, probe_tempC, color = probe_ht)) +
-  geom_path(aes()) +
-  theme_classic()
+# ggplot(filter(temps_data_noNA, box_number=="box1"), 
+#        aes(time, probe_tempC, color = probe_ht)) +
+#   geom_path(aes()) +
+#   theme_classic()
+
+
+# temps_data_noNA <- temps_data_noNA %>% 
+#   mutate(date = as.character(date),
+#          time = as.character(time),
+#          date_time = lubridate::ymd_hms(paste(date, time, sep=" "))
+#          ) %>% 
+#   select(date_time, probe_tempC:location)
 
 write_csv(temps_data_noNA, "data/temperatureID_data_noNA.csv")
 
