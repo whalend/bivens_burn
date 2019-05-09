@@ -1,4 +1,4 @@
-Block,Plot,Ind.,dead_limbs,total_limbs,chart_ht_cm,dbh_cm,ht1_cm,ht2_cm,diam1_mm,diam2_mm,pct_brown,pct_dead_limbs
+Block,Plot,Ind.,dead_limbs,total_limbs,char_ht_cm,dbh_cm,ht1_cm,ht2_cm,diam1_mm,diam2_mm,pct_brown,pct_dead_limbs
 1,1,S,4,14,182,6.6,360,405,74.83,85,45,28.57142857142857
 1,2,C,0,1,75,2.57,140,203,49.65,52.5,10,0
 1,2,D,1,5,122,3.8,330,389,50.66,57,10,20

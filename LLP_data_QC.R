@@ -12,7 +12,7 @@ tree_survival <- tree_survival %>%
   rename(dead_limbs = dead,
          total_limbs = total,
          dbh_cm = DBH,
-         chart_ht_cm = Char) %>% 
+         char_ht_cm = Char) %>% 
   mutate(ht1_cm = as.numeric(Ht_m_before_burn)*100,
          ht2_cm = as.numeric(ht_cm_after_burn),
          diam1_mm = as.numeric(Diam_mm_before_burn),
@@ -23,7 +23,7 @@ tree_survival <- tree_survival %>%
          dbh_cm = as.numeric(dbh_cm)
   ) %>% 
   filter(!is.na(ht2_cm)) %>% 
-  select(Block:Ind., dead_limbs:chart_ht_cm, dbh_cm, ht1_cm:pct_dead_limbs)
+  select(Block:Ind., dead_limbs:char_ht_cm, dbh_cm, ht1_cm:pct_dead_limbs)
 # summary(tree_survival)
 
 ## Fixed transcription errors in the orginal datasheet
