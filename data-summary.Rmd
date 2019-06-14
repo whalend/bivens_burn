@@ -221,7 +221,7 @@ max_temperatures <- temperatures %>%
 
 temperatures <- left_join(
   temperatures,
-  select(treatments, -Treatment),
+  treatments,
   by = "Plot"
 )
 
@@ -275,21 +275,21 @@ agg_data[is.na(agg_data)] <- 0
 # summarize to plot-level
 
 agg_max_temperatures <- max_temperatures %>% 
-  group_by(Plot, probe_ht, water_trt, veg_trt) %>% 
+  group_by(Plot, probe_ht) %>% 
   summarise(avg_max_temp = mean(max_temp_avg5)) %>% 
   ungroup(.)
 
 agg_temps_abv_100_data <- temps_abv_100_data %>% 
   mutate(seconds_abv_100 = ifelse(is.na(seconds_abv_100), 0, seconds_abv_100),
          heat_flux_abv_100 = ifelse(is.na(heat_flux_abv_100), 0, heat_flux_abv_100)) %>% 
-  group_by(Plot, probe_ht, water_trt, veg_trt) %>% 
+  group_by(Plot, probe_ht) %>% 
   summarise(avg_s_abv_100 = mean(seconds_abv_100),
             avg_heat_flux100 = mean(heat_flux_abv_100)) %>% 
   ungroup(.)
 # summary(agg_temps_abv_100_data)
 
 agg_fuel_flame_data <- fuel_flame_data %>% 
-  group_by(Plot, water_trt,veg_trt) %>% 
+  group_by(Plot, water_trt, veg_trt, Treatment) %>% 
   summarise(avg_drywt = mean(drywt),
             avg_fuel_moisture = mean(fuel_moisture),
             avg_fuel_ht_cm = mean(avg_fuel_ht_cm),
@@ -604,10 +604,10 @@ summary(treeht_lmer1)
 
 car::Anova(treeht_lmer1, type = "2")
 
-sjPlot::plot_model(treeht_lmer1, type = "est", show.values = T, vline.color = "gray90", colors = "viridis") +
+sjPlot::plot_model(treeht_lmer1, type = "est", show.values = T, vline.color = "gray70") +
   theme_bw()
 
-sjPlot::plot_model(treeht_lmer1, type = "int")
+sjPlot::plot_model(treeht_lmer1, type = "int", show.data = T)
 
 ```
 
@@ -863,6 +863,11 @@ max_temp_fig <- ggplot(agg_plot_data, aes((avg_dry_wt*16)/1000, avg_max_temp)) +
 # max_temp_fig
 # ggsave("figures/max_temp_scatter.png", height = 4, width = 9, dpi = 300)
 
+maxt_mod <- (lm(avg_max_temp ~ avg_drywt + veg_trt, data = agg_plot_data))
+summary(maxt_mod)
+
+sjPlot::plot_model(maxt_mod, type = "pred", terms = c("avg_drywt","veg_trt"), show.data = T)
+
 ## Not aggregated, so n=36 (max) for each treatment combination
 # ggplot(max_temperatures, aes((drywt*16)/1000, max_temp_avg5)) +
 #   geom_point(aes(color = veg_trt), alpha = .5) +
@@ -984,19 +989,21 @@ sjPlot::plot_model(lm1, type = "pred", terms = c("drywt","veg_trt"), show.data =
   invasion_fill +
   theme_classic()
 
-max_temps50_data_plot <- max_temps50_data %>% 
-  group_by(Plot, water_trt, veg_trt) %>% 
-  summarise(avg_max_temp = mean(max_temp),
-            avg_drywt = mean(drywt),
-            avg_moisture = mean(fuel_moisture),
-            avg_fuel_ht_cm = mean(avg_fuel_ht_cm)) %>% 
-  ungroup(.)
+# max_temps50_data_plot <- max_temps50_data %>% 
+#   group_by(Plot, water_trt, veg_trt) %>% 
+#   summarise(avg_max_temp = mean(max_temp),
+#             avg_drywt = mean(drywt),
+#             avg_moisture = mean(fuel_moisture),
+#             avg_fuel_ht_cm = mean(avg_fuel_ht_cm)) %>% 
+#   ungroup(.)
 
-max_temps50_lm <- lm(avg_max_temp ~ avg_drywt + veg_trt, data = max_temps50_data_plot)
 # plot(max_temps50_lm)
+
+
+max_temps50_lm <- lm(avg_max_temp ~ avg_drywt + veg_trt, data = filter(agg_plot_data, probe_ht=="50cm"))
 summary(max_temps50_lm)
 
-ggplot(max_temps50_data_plot, aes(.001*avg_drywt*16, avg_max_temp)) +
+ggplot(filter(agg_plot_data, probe_ht=="50cm"), aes(.001*avg_drywt*16, avg_max_temp)) +
   geom_point(aes(color = veg_trt, shape = water_trt)) +
   geom_smooth(aes(fill = veg_trt, color = veg_trt), method = "lm", show.legend = FALSE) +
   scale_shape_discrete(solid = FALSE) +
@@ -1004,7 +1011,7 @@ ggplot(max_temps50_data_plot, aes(.001*avg_drywt*16, avg_max_temp)) +
   invasion_fill +
   theme_classic() +
   xlab(expression(paste("Fuel load (kg ", {m}^-2, ")"), sep = "")) +
-  ylab("Maximum temperature (ºC)") +
+  ylab("Maximum temperature at 50 cm (ºC)") +
   theme(legend.title = element_blank()) +
   NULL
   
@@ -1292,79 +1299,362 @@ model_data <- tree_agg_plot_data %>%
     flameht_scale = scale(avg_flameht_cm),
     
     char_ht_scl = (char_ht_cm-mean(char_ht_cm))/(2*sd(char_ht_cm)),
-    charht_scale = scale(char_ht_cm)
+    charht_scale = scale(char_ht_cm),
+    
+    veg_trt = recode_factor(veg_trt, "reference" = 0, "invaded" = 1),
+    water_trt = recode_factor(water_trt, "ambient" = 0 , "drought" = 1),
+    
+    Treatment = factor(Treatment, levels = c("AN","AC","DN","DC"))
     
          ) %>% 
   ungroup(.) %>% 
   mutate(Plot = as.factor(Plot),
          tree_id = paste(Plot, Ind., sep = ""))
-summary(model_data)
+# summary(model_data)
 
 dat0cm <- droplevels(filter(model_data, probe_ht=="0cm"))
 dat25cm <- droplevels(filter(model_data, probe_ht=="25cm"))
 dat50cm <- droplevels(filter(model_data, probe_ht=="50cm"))
 
-summary(select(dat0cm, tree_ht_scl, heat_flux_scl, flame_ht_scl))
-summary(select(dat25cm, tree_ht_scl, heat_flux_scl, flame_ht_scl))
-summary(select(dat50cm, tree_ht_scl, heat_flux_scl, flame_ht_scl))
+# summary(select(dat0cm, tree_ht_scl, heat_flux_scl, flame_ht_scl))
+# summary(select(dat25cm, tree_ht_scl, heat_flux_scl, flame_ht_scl))
+# summary(select(dat50cm, tree_ht_scl, heat_flux_scl, flame_ht_scl))
 
 library(lme4)
 
+m0cm <- glmer(
+  survival ~ tree_ht_scl + 
+    flame_ht_scl +
+    # char_ht_scl + #AIC: 70, "boundary (singular) fit"
+    max_temp_scl + #AIC: 66.9
+    # s_abv100_scl + #AIC: 66.9, "boundary (singular) fit"
+    # heat_flux_scl + #AIC: 67
+    (1|Plot),
+  family = "binomial", data = dat0cm)
+# summary(m0cm)
+# sjPlot::plot_model(m0cm, type = "diag")
+# MuMIn::r.squaredGLMM(m0cm)
+
+m25cm <- glmer(
+  survival ~ tree_ht_scl + 
+    flame_ht_scl +
+    # char_ht_scl + #AIC 63.7, "boundary (singular) fit"
+    max_temp_scl + #AIC: 64.8
+    # s_abv100_scl + #AIC: 66.9
+    # heat_flux_scl + #AIC: 66.9
+    (1|Plot), 
+  family = "binomial", data = dat25cm)
+# summary(m25cm)
+# sjPlot::plot_model(m25cm, type = "diag")
+# MuMIn::r.squaredGLMM(m25cm)
+
+m25cm_trt <- glmer(survival ~ veg_trt*water_trt + (1|Plot), data = dat25cm,
+                   family = "binomial")
+summary(m25cm_trt)
+
+
+m50cm <- glmer(
+  survival ~ tree_ht_scl + 
+    flame_ht_scl +
+    # char_ht_scl + #AIC: 63.9, "boundary (singular) fit"
+    max_temp_scl + #AIC: 64.8, "boundary (singular) fit"
+    # s_abv100_scl + #AIC: 67.0
+    # heat_flux_scl + #AIC: 66.1
+    (1|Plot), 
+  family = "binomial", data = dat50cm)
+# summary(m50cm)
+# sjPlot::plot_model(m50cm, type = "diag")
+# MuMIn::r.squaredGLMM(m50cm)
+# 
+# AIC(m0cm,m25cm,m50cm)
+## Based on comparisons of the above models using AIC 25 or 50 cm is best
+## 50 cm produced singular fit, so opting for 25 cm
+
+m50cm_stan <- stan_glmer(survival ~ tree_ht_scl + flame_ht_scl + max_temp_scl + (1|Plot), family = binomial(link="logit"), data = dat50cm)
+summary(m50cm_stan)
+
+m25cm_unscaled <- glmer(
+  survival ~ ht2_cm + avg_flameht_cm + avg_max_temp + (1|Plot),
+  family = "binomial", data = dat25cm,
+  # control = glmerControl(
+    # optimizer="bobyqa", optCtrl = list(maxfun=2e5)
+    # )
+            )
+# summary(m25cm_unscaled)# Convergence failure warning: "rescale variables"
+## Use unscaled model for some visualizations
+# summary(m25cm)
+
+```
+
+
+
+```{r testing models, eval=FALSE}
+
 surv_glmer0cm <- lme4::glmer(
-  survival ~ tree_ht_scl + heat_flux_scl + flame_ht_scl + (1|Plot/tree_id),
+  survival ~ tree_ht_scl + flame_ht_scl + max_temp_scl + (1|Plot),
   family = "binomial", 
-  # control = glmerControl(optCtrl = list(maxfun=2e4)),
+  # control = glmerControl(optCtrl = list(maxfun=2e5)),
   data = dat0cm)
 summary(surv_glmer0cm)
-# car::Anova(surv_glmer0cm, type = "III")
+car::Anova(surv_glmer0cm, type = "II")
 
-surv_glmer25cm <- lme4::glmer(survival ~ tree_ht_scl + heat_flux_scl + flame_ht_scl + (1|Plot/tree_id), family = "binomial", data = dat25cm)
+m1 <- glmer(survival ~ tree_ht_scl + flame_ht_scl + heat_flux_scl +(1|Plot), family = "binomial", data = dat0cm,
+            # control = glmerControl(optimizer="bobyqa", optCtrl = list(maxfun=2e5))
+            )
+summary(m1)
+
+m2 <- glmer(
+  survival ~ ht2_cm + avg_flameht_cm + avg_max_temp + (1|Plot),
+  family = "binomial", data = dat0cm,
+  # control = glmerControl(
+    # optimizer="bobyqa", optCtrl = list(maxfun=2e5)
+    # )
+            )
+summary(m2)
+
+# m3 <- lmerTest::lmer(
+#   pct_brown ~ ht2_cm + char_ht_cm + avg_max_temp + (1|Plot), data = dat0cm)
+# summary(m3)
+
+
+surv_glmer25cm <- lme4::glmer(
+  survival ~ tree_ht_scl + flame_ht_scl + max_temp_scl + (1|Plot), 
+  family = "binomial", data = dat25cm)
 summary(surv_glmer25cm)
 # arm::standardize(surv_glmer25cm)
+m4 <- glmer(
+  survival ~ ht2_cm + avg_max_temp + avg_flameht_cm + (1|Plot),
+  family = "binomial", data = dat25cm,
+  # control = glmerControl(
+    # optimizer="bobyqa", optCtrl = list(maxfun=2e5)
+    # )
+            )
+summary(m4)
 
 surv_glmer50cm <- lme4::glmer(
-  survival ~ tree_ht_scl + heat_flux_scl + flame_ht_scl + (1|Plot/tree_id),
+  survival ~ tree_ht_scl + max_temp_scl + flame_ht_scl + (1|Plot),
   # control = glmerControl(optimizer = "bobyqa"),
   family = "binomial", data = dat50cm 
   )
 summary(surv_glmer50cm)
 
-AIC(surv_glmer0cm, surv_glmer25cm, surv_glmer50cm.std)
+AIC(surv_glmer0cm, surv_glmer25cm, surv_glmer50cm)
 # surv_glmer50cm <- lme4::glmer(survival ~ ht2_cm*veg_trt + avg_heat_flux100 + avg_flameht_cm + (1|Plot), family = "binomial", data = model_data)
 # summary(surv_glmer50cm)
-surv_glmer50cm.std <- lme4::glmer(survival ~ tree_ht_scl + heat_flux_scl + flame_ht_scl + (1|Plot), family = "binomial", data = model_data)
+# surv_glmer50cm.std <- lme4::glmer(survival ~ tree_ht_scl + heat_flux_scl + flame_ht_scl + (1|Plot), family = "binomial", data = model_data)
 
-sjPlot::plot_model(surv_glmer50cm.std, type = "pred", terms = c("tree_ht_scl", "flame_ht_scl"), pred.type = "fe")
-
-flux50cm <- lmerTest::lmer(heat_flux_scl ~ dry_wt_scl + fuel_ht_scl + (1|Plot), data = model_data)
-# summary(flux50cm)
-# flux50cm.std <- standardize(flux50cm)
-# summary(flux50cm.std)
-
-fuel_load50cm <- lmerTest::lmer(dry_wt_scl ~ water_trt*veg_trt + (1|Plot), data = model_data)
-# summary(fuel_load50cm)
-# fuel_load50cm.std <- standardize(fuel_load50cm)
-
-fuel_ht50cm <- lmerTest::lmer(fuel_ht_scl ~ water_trt + veg_trt + (1|Plot), data = model_data)
-# summary(fuel_ht50cm)
-# fuel_ht50cm.std <- standardize(fuel_ht50cm)
-
-tree_ht50cm <- lmerTest::lmer(tree_ht_scl ~ water_trt + veg_trt + (1|Plot), data = model_data)
-# summary(tree_ht50cm)
-# tree_ht50cm.std <- standardize(tree_ht50cm)
-
-# library(piecewiseSEM)
-# psem.mod <- psem(
-#   surv_glmer50cm,
-#   flux50cm,
-#   fuel_load50cm,
-#   fuel_ht50cm,
-#   tree_ht50cm
-# )
-# summary(psem.mod)
+sjPlot::plot_model(surv_glmer25cm, type = "pred", terms = c("max_temp_scl", "flame_ht_scl", "tree_ht_scl"), pred.type = "re" )
+sjPlot::plot_model(m4, type = "pred", terms = c("avg_max_temp", "avg_flameht_cm","ht2_cm"), pred.type = "fe", show.data = TRUE)
+sjPlot::plot_model(m4, type = "est", show.values = T)
 
 ```
 
+Build separate models for the various relationships of interest using subsets of the data as appropriate for response variables aggregated to the plot such as temperature and flame height
+
+```{r piece models together}
+
+library(nlme)
+library(sjPlot)
+
+library(rstanarm)
+
+options(mc.cores = parallel::detectCores())
+
+surv1 <- stan_glmer(survival ~ veg_trt*water_trt + (1|Plot), data = dat25cm,
+                   family = binomial(link = "logit"))
+print(surv1, digits = 3)
+
+
+m25cm1 <- glmer(
+  survival ~ tree_ht_scl + flame_ht_scl + max_temp_scl + (1|Plot), 
+  family = binomial(link = logit), data = dat25cm)
+summary(m25cm1)
+
+m1 <- stan_glmer(survival ~ tree_ht_scl + flame_ht_scl + max_temp_scl + (1 | Plot), data = dat25cm, family = binomial(link = "logit"), prior = student_t(4,0,2.5))
+print(m1, digits = 3)
+plot(m1)
+
+
+m50cm1 <- glmer(
+  survival ~ tree_ht_scl + flame_ht_scl + max_temp_scl + (1|Plot), 
+  family = binomial(link = logit), data = dat50cm)
+summary(m50cm1)
+
+m2 <- stan_glmer(survival ~ tree_ht_scl + flame_ht_scl + max_temp_scl + (1 | Plot), data = dat50cm, family = binomial(link = "logit"), prior = student_t(4,0,2.5))
+print(m2, digits = 3)
+
+
+## Plot Level Models ####
+tree_plots_dat <- filter(agg_plot_data, Plot %in% unique(dat25cm$Plot))
+
+## Max Temp Model
+
+max_temp_fig <- ggplot(tree_plots_dat, aes((avg_drywt*16)/1000, avg_max_temp)) +
+  geom_point(aes(color = veg_trt, shape = water_trt), alpha = 1) +
+  scale_shape_discrete(solid = FALSE) +
+  invasion_color +
+  invasion_fill +
+  geom_smooth(aes(color = veg_trt, fill = veg_trt), alpha = .2, method = "lm", show.legend = FALSE) +
+  # geom_text(data = fig_labels, aes(label = panel_id), fontface = "bold") +
+  facet_grid(probe_ht~.) +
+  theme_bw() +
+  # theme_classic() +
+  def_theme +
+  theme(legend.position = "none", 
+        legend.direction = "vertical",
+        legend.background = element_blank()) +
+  xlab(expression(paste("Fuel load (kg ", {m}^-2, ")"), sep = "")) +
+  ylab("Maximum temperature (ºC)")
+
+maxtemp25cm <- lm(avg_max_temp ~ avg_drywt + veg_trt, data = filter(tree_plots_dat, probe_ht == "25cm"))
+summary(maxtemp25cm)
+
+maxtemp50cm <- lm(avg_max_temp ~ avg_drywt + veg_trt, data = filter(tree_plots_dat, probe_ht == "50cm"))
+summary(maxtemp50cm)
+
+
+sabv100_50cm <- lm(avg_s_abv_100 ~ avg_drywt*veg_trt, data = filter(tree_plots_dat, probe_ht == "50cm"))
+summary(sabv100_50cm)
+
+hflux_50cm <- lm(avg_heat_flux100 ~ avg_drywt + veg_trt, data = filter(tree_plots_dat, probe_ht == "50cm"))
+summary(hflux_50cm)
+
+
+```
+
+
+### Build path model leading to tree mortality
+
+Use rescaled variables in the path model to understand the relative effects. The rescaled variables are centered (subtracting the mean) and then divided by 2 standard deviations to put the continuos variables on the same scale as the categorical variables. 
+
+
+```{r build path model}
+## Tree mortality model
+# m25cm
+# m25cm_unscaled
+
+plot_model(m25cm, show.p = T, show.values = T)
+
+plot_model(m25cm, type = "eff", show.data = T)
+plot_model(m25cm_unscaled, type = "eff", show.data = T)
+
+maxtemp25cm <- lme(avg_max_temp ~ avg_drywt, random = ~1|Plot, 
+                    data = dat25cm)
+summary(maxtemp25cm)
+plot_model(maxtemp25cm, type = "diag")
+plot_model(maxtemp25cm, type = "eff")
+# AIC(maxtemp25cm)
+
+maxt25cm <- lmer(max_temp_scl ~ dry_wt_scl + (1|Plot), 
+                    data = dat25cm,
+                    # control = lmerControl(
+                      # optimizer = "bobyqa",
+                      # optCtrl = list(maxfun=2e6)
+                    # )
+                 )
+summary(maxt25cm)
+plot_model(maxt25cm, type = "diag")
+plot_model(maxt25cm, type = "eff", pred.type = "re", show.data = T)
+plot_model(maxt25cm, type = "pred", show.data = T)
+plot_model(maxt25cm, show.data = T)
+MuMIn::r.squaredGLMM(maxt25cm)
+
+
+maxt25cm1 <- lmer(avg_max_temp ~ avg_drywt + (1|Plot), 
+                    data = dat25cm,
+                    # control = lmerControl(
+                      # optimizer = "bobyqa",
+                      # optCtrl = list(maxfun=2e6)
+                    # )
+                 )
+summary(maxt25cm1)
+plot_model(maxt25cm1, type = "diag")
+plot_model(maxt25cm1, type = "pred", show.data = T, pred.type = "re")
+MuMIn::r.squaredGLMM(maxt25cm1)
+
+
+
+flame_ht <- lme(avg_flameht_cm ~ avg_drywt, random = ~ 1|Plot, data = dat25cm)
+summary(flame_ht)
+plot_model(flame_ht, type = "diag")
+
+flame_ht1 <- lmer(flame_ht_scl ~ dry_wt_scl + (1|Plot), data = dat25cm)
+summary(flame_ht1)
+plot_model(flame_ht1, type = "pred", show.data = T, pred.type = "re")
+MuMIn::r.squaredGLMM(flame_ht1)
+
+
+
+fuel_load <- lme(avg_drywt ~ water_trt*veg_trt, random = ~1|Plot, data = dat25cm)
+summary(fuel_load)
+plot_model(fuel_load)
+plot_model(fuel_load, type = "diag")
+
+fuel_load1 <- lmer(dry_wt_scl ~ water_trt*veg_trt + (1|Plot), data = dat25cm)
+summary(fuel_load1)
+plot_model(fuel_load1)
+plot_model(fuel_load1, type = "diag")
+plot_model(fuel_load1, type = "int")
+
+tree_ht <- nlme::lme(ht2_cm ~ water_trt*veg_trt , random = ~ 1|Plot, data = dat25cm)
+summary(tree_ht)
+plot_model(tree_ht)
+# tree_ht50cm.std <- standardize(tree_ht50cm)
+tree_ht1 <- lmer(tree_ht_scl ~ water_trt*veg_trt + (1|Plot), data = dat25cm)
+summary(tree_ht1)
+plot_model(tree_ht1)
+
+# devtools::install_github("jslefche/piecewiseSEM@devel", build_vignette=TRUE)
+library(piecewiseSEM)
+psem.mod <- psem(
+  m25cm_unscaled,
+  maxtemp25cm,
+  flame_ht,
+  fuel_load,
+  tree_ht
+)
+summary(psem.mod)
+
+
+```
+
+Too many issues with the catergorical variables (?) to achieve a fit using SEM methods.
+
+
+```{r lavaan model, eval = F}
+library(lavaan)
+
+myModel <- 'survival ~ ht2_cm + avg_flameht_cm + avg_max_temp
+                  avg_max_temp ~ avg_drywt
+                  avg_flameht_cm ~ avg_drywt
+                  avg_drywt ~ water_trt * veg_trt
+                  ht2_cm ~ water_trt * veg_trt
+
+'
+
+fit <- sem(myModel, data=dat25cm)
+summary(fit, standardized=TRUE)
+
+  
+' # regressions
+             
+
+             # latent variable definitions 
+               # f1 =~ y1 + y2 + y3 
+               # f2 =~ y4 + y5 + y6 
+               # f3 =~ y7 + y8 + y9 + y10
+
+             # variances and covariances 
+               # y1 ~~ y1 
+               # y1 ~~ y2 
+               # f1 ~~ f2
+
+             # intercepts 
+               # y1 ~ 1 
+               # f1 ~ 1
+'
+
+```
 
 
 ```{bash, eval=F}
