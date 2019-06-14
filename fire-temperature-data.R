@@ -15,7 +15,9 @@ library(ggplot2)
 
 # Goal: add a plot id and probe location to each fire
 
+## make list of tempearture data files with csv format in directory
 flist <- list.files("data/temperature_data_raw/", pattern = ".csv", full.names = T)
+## Exploratory code to identify the stucture of the flist objects
 # nlist <- list.files("data/temperature_data_raw/", pattern = ".csv")
 # df_name <- str_split(flist, "[_/]")
 
@@ -23,17 +25,21 @@ flist <- list.files("data/temperature_data_raw/", pattern = ".csv", full.names =
 # d <- (str_split(d, "[_/]"))
 # d <- unlist(d)
 # dname = d[6]
-temps_data <- data.frame()
+
+temps_data <- data.frame()# make an empty data frame object
+
+## Read in all temperature data and combine to 1 data frame ####
 for(fname in flist){
   
   df_name = str_split(fname, "[_/]")
   df_name = unlist(df_name)
-  location = df_name[7]
+  location = df_name[7]# probe height/depth from file name
   box_num = df_name[6]
   df = read_csv(fname)
   df = df[,1:3]
   
-  if (names(df)[2]=="Time, GMT-05:00") {
+  # make all times in same zone; some loggers launched during DST
+  if (names(df)[2]=="Time, GMT-05:00") { 
     df[,2] = df[,2]+3600
   }
   
@@ -46,6 +52,7 @@ for(fname in flist){
   rm(df)
 }
 
+## Read in supporting data ####
 ignition_times <- read_csv("data/ignition_times.csv")
 # ignition_times
 names(ignition_times) <- c("plot_num","ignition_time")
@@ -74,6 +81,7 @@ fire_plot_info$time_numeric <- as.numeric(fire_plot_info$ignition_time)
 temps_data$plot_num <- NA
 temps_data$location <- NA
 
+## Exploratory plotting to confirm the time range of fires ####
 t_data <- (filter(temps_data, between(time,38000,60960), probe_tempC>35))
 
 ggplot(filter(t_data, probe_ht=="0cm", box_number=="box1"), 
@@ -101,7 +109,10 @@ unique(t_data$plot_num)
 
 # filter(temps_data, between(time, 38400, 40940) & box_number=="box1")
 
-
+## Here is where the hard work begins of matching fires to plots.
+## I use the ignition times as a guide to find the starting time for fires,
+## and then filter and plot the data using the ggplot code above. This is 
+## tedious, but I think preferred to doing it via Excel filtering/assigining. 
 # Assign plot numbers and location IDs to temperatures ----
 # Box 1 ----
 filter(fire_plot_info, box_number=="box1")
@@ -503,7 +514,7 @@ temps_data$plot_num[temps_data$box_number=="box12" & temps_data$time >= 60060] <
 temps_data$location[temps_data$box_number=="box12" & temps_data$time >= 60060] <- "C"
 
 
-# Session info ----
+# Write out files & check session info ----
 str(temps_data)
 temps_data_noNA <- filter(temps_data, !is.na(plot_num))
 summary(temps_data_noNA)
