@@ -1386,6 +1386,7 @@ m25cm_unscaled <- glmer(
 
 ```
 
+Best model formulation based on AIC uses maximum temperature variable 
 
 
 ```{r testing models, eval=FALSE}
@@ -1451,7 +1452,7 @@ sjPlot::plot_model(m4, type = "est", show.values = T)
 
 Build separate models for the various relationships of interest using subsets of the data as appropriate for response variables aggregated to the plot such as temperature and flame height
 
-```{r piece models together}
+```{r tree survival}
 
 library(nlme)
 library(sjPlot)
@@ -1463,32 +1464,83 @@ options(mc.cores = parallel::detectCores())
 surv1 <- stan_glmer(survival ~ veg_trt*water_trt + (1|Plot), data = dat25cm,
                    family = binomial(link = "logit"))
 print(surv1, digits = 3)
+s1_r2 <- bayes_R2(surv1)
+print(median(s1_r2))# 0.24
 
 
 m25cm1 <- glmer(
   survival ~ tree_ht_scl + flame_ht_scl + max_temp_scl + (1|Plot), 
   family = binomial(link = logit), data = dat25cm)
 summary(m25cm1)
+rsquared(m25cm1)
+MuMIn::r.squaredGLMM(m25cm1)
+plot_model(m25cm1, show.values = T)
+plot_model(m25cm1, type = "pred", pred.type = "re", show.data = T)
+
+m25cm2 <- glmer(
+  survival ~ ht2_cm + avg_flameht_cm + avg_max_temp + (1|Plot), 
+  family = binomial(link = logit), data = dat25cm)
+plot_model(m25cm2, type = "pred", pred.type = "re", show.data = T)
+
 
 m1 <- stan_glmer(survival ~ tree_ht_scl + flame_ht_scl + max_temp_scl + (1 | Plot), data = dat25cm, family = binomial(link = "logit"), prior = student_t(4,0,2.5))
 print(m1, digits = 3)
 plot(m1)
+m1_rsq <- bayes_R2(m1)
+print(median(m1_rsq))# 0.58
 
 
 m50cm1 <- glmer(
   survival ~ tree_ht_scl + flame_ht_scl + max_temp_scl + (1|Plot), 
   family = binomial(link = logit), data = dat50cm)
 summary(m50cm1)
+MuMIn::r.squaredGLMM(m50cm1)
+rsquared(m50cm1)
 
 m2 <- stan_glmer(survival ~ tree_ht_scl + flame_ht_scl + max_temp_scl + (1 | Plot), data = dat50cm, family = binomial(link = "logit"), prior = student_t(4,0,2.5))
 print(m2, digits = 3)
+m2_rsq <- bayes_R2(m2)
+print(median(m2_rsq))# 0.57
+
+## tree height model ####
+tree_ht_mod <- lmer(ht2_cm ~ water_trt*veg_trt + (1|Plot), data = dat25cm)
+# plot_model(tree_ht_mod, type = "diag")
+plot_model(tree_ht_mod, type = "int", pred.type = "re")
+plot_model(tree_ht_mod, show.values = T)
+summary(tree_ht_mod)
+
+```
 
 
-## Plot Level Models ####
+```{r plot level response models}
 tree_plots_dat <- filter(agg_plot_data, Plot %in% unique(dat25cm$Plot))
 
-## Max Temp Model
+## flame height model ####
+flame_ht_mod <- lm(avg_flameht_cm ~ avg_drywt + veg_trt, data = filter(tree_plots_dat, probe_ht == "25cm"))
+# plot_model(flame_ht_mod, type = "diag")
+plot_model(flame_ht_mod, type = "pred", terms = c("avg_drywt","veg_trt"), show.data = T)
+summary(flame_ht_mod)
 
+flame_ht_fig <- ggplot(filter(tree_plots_dat, probe_ht == "25cm"),
+                       aes((avg_drywt*16)/1000, avg_flameht_cm),
+                       ) +
+  geom_point(aes(color = veg_trt, shape = water_trt), alpha = 1) +
+  scale_shape_discrete(solid = FALSE) +
+  invasion_color +
+  invasion_fill +
+  geom_smooth(aes(color = veg_trt, fill = veg_trt), alpha = .2, method = "lm", show.legend = FALSE) +
+  theme_bw() +
+  # theme_classic() +
+  def_theme +
+  theme(legend.position = c(.1,.83),
+        legend.margin = margin(-5,-1,-5,-1),
+        legend.direction = "vertical",
+        legend.background = element_blank()) +
+  xlab(expression(paste("Fuel load (kg ", {m}^-2, ")"), sep = "")) +
+  ylab("Flame height (cm)") +
+  NULL
+
+## max temp model ####
 max_temp_fig <- ggplot(tree_plots_dat, aes((avg_drywt*16)/1000, avg_max_temp)) +
   geom_point(aes(color = veg_trt, shape = water_trt), alpha = 1) +
   scale_shape_discrete(solid = FALSE) +
@@ -1508,10 +1560,10 @@ max_temp_fig <- ggplot(tree_plots_dat, aes((avg_drywt*16)/1000, avg_max_temp)) +
 
 maxtemp25cm <- lm(avg_max_temp ~ avg_drywt + veg_trt, data = filter(tree_plots_dat, probe_ht == "25cm"))
 summary(maxtemp25cm)
+plot_model(maxtemp25cm, type = "diag")
 
 maxtemp50cm <- lm(avg_max_temp ~ avg_drywt + veg_trt, data = filter(tree_plots_dat, probe_ht == "50cm"))
 summary(maxtemp50cm)
-
 
 sabv100_50cm <- lm(avg_s_abv_100 ~ avg_drywt*veg_trt, data = filter(tree_plots_dat, probe_ht == "50cm"))
 summary(sabv100_50cm)
