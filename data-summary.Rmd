@@ -2,11 +2,14 @@
 title: "Bivens Burn Data Analysis"
 author: "W.W. Dillon"
 date: "`r Sys.Date()`"
-output: 
+output:
   html_document:
     toc: true
     toc_float: 
       collapsed: false
+  word_document:
+    toc: yes
+    reference_docx: stylingbreaks1.docx
 ---
 
 Target Journal:
@@ -57,17 +60,17 @@ figure_height <- 7.5
 # invasion_color <- scale_color_viridis(begin = .15, end = .9, option = "E", discrete = T)
 # invasion_fill <- scale_fill_viridis(begin = .15, end = .9, option = "E", discrete = T)
 
-invasion_color <- scale_color_manual(values = c("deepskyblue","red"))
-invasion_fill <- scale_fill_manual(values = c("deepskyblue","red"))
+invasion_color <- scale_color_manual(values = c("Reference" ="deepskyblue", "Invaded"="red"))
+invasion_fill <- scale_fill_manual(values = c("Reference" ="deepskyblue", "Invaded"="red"))
 
 # define theme ####
 def_theme <- theme(legend.title = element_blank(),
             legend.text = element_text(size = 14),
             # legend.position = "none",
-            axis.text = element_text(size = 18),
+            axis.text = element_text(size = 18, color = "black"),
             axis.title = element_text(size = 18),
             plot.title = element_text(size = 20),
-            strip.background = element_blank(),
+            # strip.background = element_blank(),
             strip.text = element_text(size = 14),
             panel.grid = element_blank()
             )
@@ -83,10 +86,10 @@ dodge <- position_dodge(width=0.9)
 treatments <- treatments %>% 
   mutate(water_trt = substr(Treatment, 1,1),
          veg_trt = substr(Treatment,2,2),
-         water_trt = if_else(water_trt=="D", "drought", "ambient"),
-         water_trt = factor(water_trt, levels = c("ambient","drought")),
-         veg_trt = if_else(veg_trt=="C", "invaded", "reference"),
-         veg_trt = factor(veg_trt, levels = c("reference","invaded"))
+         water_trt = if_else(water_trt=="D", "Drought", "Ambient"),
+         water_trt = factor(water_trt, levels = c("Ambient","Drought")),
+         veg_trt = if_else(veg_trt=="C", "Invaded", "Reference"),
+         veg_trt = factor(veg_trt, levels = c("Reference","Invaded"))
          )
 
 
@@ -182,9 +185,14 @@ temperatures <- temperatures %>%
   mutate(Box_ID = as.numeric(substr(Box_ID, start = 4, stop = nchar(Box_ID))),
          probe_ht = factor(probe_ht, levels = c("50cm","25cm","0cm")))
 
+temperatures <- left_join(
+  temperatures,
+  treatments,
+  by = "Plot"
+)
 
 temps_abv_100_data <- temperatures %>% 
-  group_by(Plot, Location, probe_ht) %>% 
+  group_by(Plot, Location, probe_ht, water_trt, veg_trt) %>% 
   filter(probe_tempC >= 100) %>% 
   summarise(seconds_abv_100 = length(probe_tempC),
             heat_flux_abv_100 = sum(probe_tempC)
@@ -203,7 +211,7 @@ temps_abv_100_data <- temperatures %>%
 #   skimr::skim(.)
 
 max_temperatures <- temperatures %>% 
-  group_by(Plot, Location, probe_ht) %>% 
+  group_by(Plot, Location, probe_ht, water_trt, veg_trt) %>% 
   arrange(desc(probe_tempC)) %>% 
   summarise(max_temp = max(probe_tempC),
             max_temp_avg5 = mean(probe_tempC[1:5])) %>% 
@@ -212,18 +220,13 @@ max_temperatures <- temperatures %>%
 # max_temperatures <- left_join(
 #   max_temperatures,
 #   fuel_flame_data
-)
+# )
 
 # max_temperatures %>% 
 #   group_by(water_trt, veg_trt, probe_ht) %>% 
 #   select(max_temp) %>% 
 #   skimr::skim(.)
 
-temperatures <- left_join(
-  temperatures,
-  treatments,
-  by = "Plot"
-)
 
 # tree damage/survival ####
 
@@ -251,7 +254,7 @@ tree_dmg <- left_join(
 tree_dmg <- tree_dmg %>% 
   mutate(alive = if_else(pct_dead_limbs==100, 0, 1),
          dead = if_else(pct_dead_limbs==100, 1, 0),
-         survival = if_else(pct_dead_limbs==100, 0, 1))
+         survival = if_else(pct_dead_limbs==100, 0, 1),)
 
 # tree_dmg %>% 
 #   group_by(veg_trt, water_trt) %>% 
@@ -290,7 +293,7 @@ agg_temps_abv_100_data <- temps_abv_100_data %>%
 
 agg_fuel_flame_data <- fuel_flame_data %>% 
   group_by(Plot, water_trt, veg_trt, Treatment) %>% 
-  summarise(avg_drywt = mean(drywt),
+  summarise(avg_dry_wt = mean(drywt),
             avg_fuel_moisture = mean(fuel_moisture),
             avg_fuel_ht_cm = mean(avg_fuel_ht_cm),
             avg_litter_depth_cm = mean(avg_litter_depth_cm),
@@ -447,29 +450,6 @@ knitr::kable(agg_plot_data %>%
 
 ```
 
-```{r fuel moisture barchart, eval=FALSE}
-
-(fuel_moisture_fig <- ggplot(
-  fuel_mass %>% 
-    group_by(water_trt, veg_trt) %>% 
-    summarise(avg_moisture = mean(fuel_moisture),
-              nobs = length(fuel_moisture),
-              se_moisture = sd(fuel_moisture)/sqrt(nobs)),
-  aes(water_trt, avg_moisture, fill = veg_trt)) +
-  invasion_color + 
-  invasion_fill +
-  geom_col(position = dodge) +
-  geom_errorbar(aes(ymax = avg_moisture + se_moisture, ymin = avg_moisture - se_moisture), position = dodge, width = 0) +
-  theme_bw() +
-  def_theme +
-  xlab("") +
-  ylab("Fuel moisture (%)") +
-  theme(legend.position = "top")
-)
-ggsave("figures/fuel_moisture_bar.png", height = 4, width = 5, dpi = 300)
-
-```
-
 ```{r fuel moisture boxplot}
 
 # ggplot(fuel_mass, aes(water_trt, fuel_moisture)) +
@@ -506,6 +486,29 @@ knitr::kable(filter(agg_plot_data, probe_ht=="0cm") %>%
 
 ```
 
+```{r fuel height boxplot}
+
+ggplot(filter(agg_plot_data, probe_ht=="0cm"), aes(water_trt, avg_fuel_ht_cm)) +
+  geom_boxplot(aes(color = veg_trt), notch = F, outlier.color = "white") +
+  geom_point(aes(color = veg_trt), position = position_jitterdodge(dodge.width = .8, jitter.width = .2)) +
+  # stat_summary(aes(color = veg_trt),fun.data = "mean_se", geom = "pointrange", position = position_dodge(width = .2), size = 1) +
+  invasion_fill +
+  invasion_color +
+  theme_bw() +
+  def_theme +
+  xlab("") +
+  ylab("Fuel height (cm)") +
+  theme(legend.position = "top")
+
+knitr::kable(filter(agg_plot_data, probe_ht=="0cm") %>% 
+    group_by(water_trt, veg_trt) %>% 
+    summarise(avg_fuel_ht = mean(avg_fuel_ht_cm),
+              nobs = length(avg_fuel_ht_cm),
+              se_fuel_ht = sd(avg_fuel_ht_cm)/sqrt(nobs)), 
+    digits = 2, caption = "Fuel height (cm)")
+```
+
+
 ## Char height
 
 ```{r char height fig}
@@ -516,8 +519,7 @@ knitr::kable(filter(agg_plot_data, probe_ht=="0cm") %>%
 #                    se = sd(ht2_cm, na.rm = T)/sqrt(nobs))
 ggplot(tree_dmg, 
        aes(water_trt, char_ht_cm)) +
-  # geom_col(position = dodge) + 
-  # geom_errorbar(aes(ymax = avg_ht+se, ymin = avg_ht-se), position = dodge, width = 0) + 
+  
   geom_boxplot(aes(color = veg_trt), alpha = 0) +
   geom_point(aes(color = veg_trt), position = position_jitterdodge(dodge.width = .8)) +
   invasion_fill +
@@ -578,7 +580,8 @@ summary(treeht_lm1)
 car::Anova(treeht_lm1, type = "II")
 
 sjPlot::plot_model(treeht_lm1, type = "diag")
-sjPlot::plot_model(treeht_lm1, type = "int" , show.data = FALSE)
+sjPlot::plot_model(treeht_lm1, type = "int" , show.data = FALSE) +
+  invasion_color
 
 sjPlot::plot_model(
   treeht_lm1, 
@@ -659,7 +662,7 @@ knitr::kable(flame_heights_trt, digits = 2)
  
 ```
 
-Two observations of flame height at three locations in each plot, with ten plots in each treatment group.
+Two observations of flame height at three locations in each plot, with ten plots in each treatment group. Average flame heights estimated to be 4 time higher in cogongrass-invaded plots compared to reference plots, regardless of drought.
 
 # Temperature Data
 
@@ -735,9 +738,9 @@ fig_labels <- data.frame(
   probe_ht = c("50cm","25cm","0cm"), 
   panel_id = c("a","b","c"),
   avg_dry_wt=c(-.1,-.1,-.1), 
-  avg_s_abv100=c(450,450,450))
+  avg_s_abv_100=c(450,450,450))
 
-time_abv_100_fig <- ggplot(agg_plot_data, aes((avg_dry_wt*16)/1000, avg_s_abv100)) +
+time_abv_100_fig <- ggplot(agg_plot_data, aes((avg_dry_wt*16)/1000, avg_s_abv_100)) +
   geom_point(aes(color = veg_trt, shape = water_trt)) +
   scale_shape_discrete(solid = FALSE) +
   invasion_color +
@@ -781,13 +784,13 @@ time_abv_100_fig <- ggplot(agg_plot_data, aes((avg_dry_wt*16)/1000, avg_s_abv100
 
 ```
 
-```{r temps abv 100 table}
+```{r temps abv 100 table, eval=T}
 
 knitr::kable(temps_abv_100_data %>% 
          group_by(probe_ht, veg_trt, water_trt) %>% 
          summarise(avg_s_abv100 = mean(seconds_abv_100),
-                   nobs = length(seconds_abv_100),
-                   se_s_abv100 = sd(seconds_abv_100/sqrt(nobs))),
+                   n_tc_obs = length(seconds_abv_100),
+                   se_s_abv100 = sd(seconds_abv_100/sqrt(n_tc_obs))),
          digits = 2, caption = "Seconds above 100 ºC by treatment and probe height")
 
 ```
@@ -863,10 +866,13 @@ max_temp_fig <- ggplot(agg_plot_data, aes((avg_dry_wt*16)/1000, avg_max_temp)) +
 # max_temp_fig
 # ggsave("figures/max_temp_scatter.png", height = 4, width = 9, dpi = 300)
 
-maxt_mod <- (lm(avg_max_temp ~ avg_drywt + veg_trt, data = agg_plot_data))
+maxt_mod <- (lm(avg_max_temp ~ avg_dry_wt + veg_trt + probe_ht, data = agg_plot_data))
 summary(maxt_mod)
+car::Anova(maxt_mod)
 
-sjPlot::plot_model(maxt_mod, type = "pred", terms = c("avg_drywt","veg_trt"), show.data = T)
+sjPlot::plot_model(maxt_mod, type = "pred", terms = c("avg_dry_wt","veg_trt","probe_ht"), show.data = T) +
+  invasion_color +
+  invasion_fill
 
 ## Not aggregated, so n=36 (max) for each treatment combination
 # ggplot(max_temperatures, aes((drywt*16)/1000, max_temp_avg5)) +
@@ -885,7 +891,7 @@ sjPlot::plot_model(maxt_mod, type = "pred", terms = c("avg_drywt","veg_trt"), sh
 
 ```
 
-```{r max temp summary tables}
+```{r max temp summary tables, eval=FALSE}
 
 knitr::kable(max_temperatures %>% 
          group_by(probe_ht, water_trt, veg_trt) %>% 
@@ -904,27 +910,6 @@ knitr::kable(max_temperatures %>%
 
 ```
 
-## Temperatures manuscript figure
-
-```{r fig1 }
-
-cowplot::plot_grid(
-  time_abv_100_fig +
-    theme(strip.text = element_text(color = "white"),
-          legend.margin = margin(t = -3, r = 0, b = -3, l = 0),
-          legend.position = c(.7,.9),),
-  max_temp_fig +
-    theme(strip.background = element_blank()))
-
-# ggsave("figures/fig1_7x7_600dpi.tiff", height = 7, width = 7, dpi = 600)
-# Recommended max height: 54 picas / 9” / 22.5 cm. 
-# Use one of the following widths: 
-# 1 column wide (20.5 picas / 3.42” / 8.7 cm) 
-# 1.5 columns wide (27 picas / 4.5” / 11.4 cm) 
-# 2 columns wide (42.125 picas / 7” / 17.8 cm)
-
-```
-
 
 ## Max temp regressions
 ```{r max temp 50cm regressions}
@@ -932,7 +917,8 @@ cowplot::plot_grid(
 max_temps50_data <- max_temperatures %>% 
   filter(probe_ht=="50cm") %>% 
   mutate(veg_trt = as.factor(veg_trt),
-         water_trt = as.factor(water_trt))
+         water_trt = as.factor(water_trt)) %>% 
+  left_join(., fuel_measures)
 summary(max_temps50_data)
 
 max_temp50_lme1 <- lmerTest::lmer(max_temp ~ drywt*veg_trt + drywt*water_trt + fuel_moisture + veg_trt*water_trt + (1|Plot), data = max_temps50_data, na.action = "na.fail")
@@ -962,8 +948,6 @@ sjPlot::plot_model(
   max_temp50_lme4, type = "est", 
   show.values = T, vline.color = "gray90", colors = "viridis") +
   theme_bw()
-
-
 
 # sjPlot::plot_model(max_temp50_lme4, type = "pred", terms = c("avg_drywt","veg_trt"), show.data = T)
 
@@ -1000,12 +984,15 @@ sjPlot::plot_model(lm1, type = "pred", terms = c("drywt","veg_trt"), show.data =
 # plot(max_temps50_lm)
 
 
-max_temps50_lm <- lm(avg_max_temp ~ avg_drywt + veg_trt, data = filter(agg_plot_data, probe_ht=="50cm"))
+max_temps50_lm <- lm(avg_max_temp ~ avg_dry_wt + veg_trt, data = filter(agg_plot_data, probe_ht=="50cm"))
 summary(max_temps50_lm)
 
-ggplot(filter(agg_plot_data, probe_ht=="50cm"), aes(.001*avg_drywt*16, avg_max_temp)) +
+equatiomatic::extract_eq(max_temps50_lm, use_coefs = TRUE) %>%
+  equatiomatic::preview()
+
+ggplot(filter(agg_plot_data, probe_ht=="50cm"), aes(.001*avg_dry_wt*16, avg_max_temp)) +
+  geom_smooth(aes(fill = veg_trt, color = veg_trt), alpha = .3, method = "lm", show.legend = FALSE) +
   geom_point(aes(color = veg_trt, shape = water_trt)) +
-  geom_smooth(aes(fill = veg_trt, color = veg_trt), method = "lm", show.legend = FALSE) +
   scale_shape_discrete(solid = FALSE) +
   invasion_color +
   invasion_fill +
@@ -1020,25 +1007,30 @@ ggplot(filter(agg_plot_data, probe_ht=="50cm"), aes(.001*avg_drywt*16, avg_max_t
 ```{r max temp 25cm regressions}
 
 max_temps25_data <- max_temperatures %>% 
-  filter(probe_ht=="25cm")
+  filter(probe_ht=="25cm") %>% 
+  left_join(fuel_measures)
 
 max_temp25_lme4 <- lme4::lmer(max_temp ~ drywt*veg_trt + (1|Plot), data = max_temps25_data)
 summary(max_temp25_lme4)
 car::Anova(max_temp25_lme4, type = "II")
 MuMIn::r.squaredGLMM(max_temp25_lme4)
 
+
 sjPlot::plot_model(
   max_temp25_lme4, type = "est", 
   show.values = T, vline.color = "gray90", colors = "viridis") +
   theme_bw()
 
+max_temps25_lm <- lm(avg_max_temp ~ avg_dry_wt + veg_trt, data = filter(agg_plot_data, probe_ht=="25cm"))
+summary(max_temps25_lm)
 
 ```
 
 ```{r max temp 0cm regressions}
 
 max_temps0_data <- max_temperatures %>% 
-  filter(probe_ht=="0cm")
+  filter(probe_ht=="0cm") %>% 
+  left_join(fuel_measures)
 
 max_temp0_lme4 <- lme4::lmer(max_temp ~ drywt + veg_trt + (1|Plot), data = max_temps0_data)
 summary(max_temp0_lme4)
@@ -1050,13 +1042,17 @@ sjPlot::plot_model(
   show.values = T, vline.color = "gray90", colors = "viridis") +
   theme_bw()
 
+max_temps0_lm <- lm(avg_max_temp ~ avg_dry_wt + veg_trt, data = filter(agg_plot_data, probe_ht=="0cm"))
+summary(max_temps0_lm)
+
 ```
 
 ## Time >100 ºC regressions: 50cm probe height
 ```{r time abv 100 regressions}
 
 temps_abv100_50data <- temps_abv_100_data %>% 
-  filter(probe_ht=="50cm")
+  filter(probe_ht=="50cm") %>% 
+  left_join(fuel_measures)
 
 abv100_lme1 <- lmerTest::lmer(seconds_abv_100 ~ drywt*veg_trt + fuel_moisture + avg_litter_depth_cm*veg_trt + veg_trt*water_trt + (1|Plot), data = temps_abv100_50data)
 summary(abv100_lme1)
@@ -1083,7 +1079,6 @@ MuMIn::r.squaredGLMM(abv100_lme4)
 ```
 
 # Tree Damage & Survival
-
 
 ## Percent dead limbs
 
@@ -1168,41 +1163,6 @@ knitr::kable(tree_dmg %>%
 
 ```
 
-## Post-fire tree survival
-
-Box-plots showing the proportion of trees in each plot that survived the fires.
-
-```{r llp survival}
-
-tree_surv_plot <- tree_dmg %>% 
-  group_by(Plot, water_trt, veg_trt) %>% 
-  summarise(survival = sum(survival)/length(survival))
-
-ggplot(tree_surv_plot, aes(water_trt, survival*100)) +
-  geom_boxplot(aes(fill = veg_trt), alpha = 0, show.legend = FALSE) +
-  geom_point(aes(color = veg_trt), position = position_jitterdodge(dodge.width = .75, jitter.width = .3)) +
-  # stat_summary(fun.data = "mean_se", geom = "pointrange", position = position_dodge(width = .5), size = 1) +
-  invasion_fill +
-  invasion_color +
-  theme_bw() +
-  def_theme +
-  xlab("") +
-  ylab("% survival") +
-  theme(legend.position = "top")
-
-```
-
-```{r tree survival data table summary}
-
-tree_dmg %>% 
-  group_by(water_trt, veg_trt) %>% 
-  summarise(plots = n_distinct(Plot),
-            trees = length(tree_id),
-            pct_survival = 100*sum(survival)/length(survival),
-            sd_survival = 100*(sd(survival, na.rm = TRUE))) %>% 
-  knitr::kable(.)
-
-```
 
 ```{r plot-level tree mortality models, eval=FALSE}
 
@@ -1261,70 +1221,15 @@ tree_agg_plot_data %>%
 
 ```
 
-```{r tree-level mortality modeling}
 
-## Which probe height temperature measurement best explains tree survival? ####
+### Which probe height temperature measurement best explains tree survival?
 
-# write_csv(tree_agg_plot_data,"data/tree_mortality_model_data.csv")
-tree_agg_plot_data <- read_csv("data/tree_mortality_model_data.csv")
-
-## Rescale variables
-### Continuous: center and divide by 2 standard deviations
-model_data <- tree_agg_plot_data %>% 
-  # mutate(tree_id = paste(Plot, ))
-  group_by(probe_ht) %>%
-  # ungroup(.) %>%
-  # filter(probe_ht=="50cm") %>% 
-  # select(survival, avg_max_temp:avg_flameht_cm, char_ht_cm, ht2_cm, veg_trt, water_trt, Plot, tree_id, Ind.) %>% 
-  mutate(
-    max_temp_scl = (avg_max_temp-mean(avg_max_temp))/(2*sd(avg_max_temp)),
-    maxt_scale = scale(avg_max_temp),
-    
-    s_abv100_scl = (avg_s_abv_100-mean(avg_s_abv_100))/(2*sd(avg_s_abv_100)),
-    sabv100_scale = scale(avg_s_abv_100),
-         
-    heat_flux_scl = (avg_heat_flux100-mean(avg_heat_flux100))/(2*sd(avg_heat_flux100)),
-    hflux_scale = scale(avg_heat_flux100),
-    
-    dry_wt_scl = (avg_drywt-mean(avg_drywt))/(2*sd(avg_drywt)),
-    wt_scale = scale(avg_drywt),
-    
-    fuel_ht_scl = (avg_fuel_ht_cm-mean(avg_fuel_ht_cm))/(2*sd(avg_fuel_ht_cm)),
-    fuelht_scale = scale(avg_fuel_ht_cm),
-    
-    tree_ht_scl =  (ht2_cm-mean(ht2_cm))/(2*sd(ht2_cm)),
-    treeht_scale = scale(ht2_cm),
-    
-    flame_ht_scl =  (avg_flameht_cm-mean(avg_flameht_cm))/(2*sd(avg_flameht_cm)),
-    flameht_scale = scale(avg_flameht_cm),
-    
-    char_ht_scl = (char_ht_cm-mean(char_ht_cm))/(2*sd(char_ht_cm)),
-    charht_scale = scale(char_ht_cm),
-    
-    veg_trt = recode_factor(veg_trt, "reference" = 0, "invaded" = 1),
-    water_trt = recode_factor(water_trt, "ambient" = 0 , "drought" = 1),
-    
-    Treatment = factor(Treatment, levels = c("AN","AC","DN","DC"))
-    
-         ) %>% 
-  ungroup(.) %>% 
-  mutate(Plot = as.factor(Plot),
-         tree_id = paste(Plot, Ind., sep = ""))
-# summary(model_data)
-
-dat0cm <- droplevels(filter(model_data, probe_ht=="0cm"))
-dat25cm <- droplevels(filter(model_data, probe_ht=="25cm"))
-dat50cm <- droplevels(filter(model_data, probe_ht=="50cm"))
-
-# summary(select(dat0cm, tree_ht_scl, heat_flux_scl, flame_ht_scl))
-# summary(select(dat25cm, tree_ht_scl, heat_flux_scl, flame_ht_scl))
-# summary(select(dat50cm, tree_ht_scl, heat_flux_scl, flame_ht_scl))
-
+```{r test probe ht models, eval=F}
 library(lme4)
 
 m0cm <- glmer(
-  survival ~ tree_ht_scl + 
-    flame_ht_scl +
+  survival ~ tree_ht_scl + # tree ht alone, AIC: 86.9
+    flame_ht_scl + # only this + tree ht, AIC: 64.9
     # char_ht_scl + #AIC: 70, "boundary (singular) fit"
     max_temp_scl + #AIC: 66.9
     # s_abv100_scl + #AIC: 66.9, "boundary (singular) fit"
@@ -1335,29 +1240,34 @@ m0cm <- glmer(
 # sjPlot::plot_model(m0cm, type = "diag")
 # MuMIn::r.squaredGLMM(m0cm)
 
+## Tree height alone, AIC: 86.9
+## Tree height + flame height, AIC: 65
+## No effective change in AIC by including a temperature variable
+
 m25cm <- glmer(
   survival ~ tree_ht_scl + 
     flame_ht_scl +
     # char_ht_scl + #AIC 63.7, "boundary (singular) fit"
-    max_temp_scl + #AIC: 64.8
+    # max_temp_scl + #AIC: 64.8
     # s_abv100_scl + #AIC: 66.9
     # heat_flux_scl + #AIC: 66.9
     (1|Plot), 
   family = "binomial", data = dat25cm)
 # summary(m25cm)
+# car::Anova(m25cm)
 # sjPlot::plot_model(m25cm, type = "diag")
 # MuMIn::r.squaredGLMM(m25cm)
 
-m25cm_trt <- glmer(survival ~ veg_trt*water_trt + (1|Plot), data = dat25cm,
+m25cm_trt <- glmer(survival ~ veg_trt + water_trt + (1|Plot), data = dat25cm,
                    family = "binomial")
-summary(m25cm_trt)
+# summary(m25cm_trt)
 
 
 m50cm <- glmer(
   survival ~ tree_ht_scl + 
     flame_ht_scl +
     # char_ht_scl + #AIC: 63.9, "boundary (singular) fit"
-    max_temp_scl + #AIC: 64.8, "boundary (singular) fit"
+    # max_temp_scl + #AIC: 64.8, "boundary (singular) fit"
     # s_abv100_scl + #AIC: 67.0
     # heat_flux_scl + #AIC: 66.1
     (1|Plot), 
@@ -1370,23 +1280,25 @@ m50cm <- glmer(
 ## Based on comparisons of the above models using AIC 25 or 50 cm is best
 ## 50 cm produced singular fit, so opting for 25 cm
 
-m50cm_stan <- stan_glmer(survival ~ tree_ht_scl + flame_ht_scl + max_temp_scl + (1|Plot), family = binomial(link="logit"), data = dat50cm)
-summary(m50cm_stan)
+# library(rstanarm)
+# m50cm_stan <- stan_glmer(survival ~ tree_ht_scl + flame_ht_scl + hflux_scale + (1|Plot), family = binomial(link="logit"), data = dat50cm)
+# summary(m50cm_stan)
+# # median(bayes_R2(surv1))
 
-m25cm_unscaled <- glmer(
-  survival ~ ht2_cm + avg_flameht_cm + avg_max_temp + (1|Plot),
-  family = "binomial", data = dat25cm,
-  # control = glmerControl(
-    # optimizer="bobyqa", optCtrl = list(maxfun=2e5)
-    # )
-            )
+# m25cm_unscaled <- glmer(
+#   survival ~ ht2_cm + avg_flameht_cm + avg_max_temp + (1|Plot),
+#   family = "binomial", data = dat25cm,
+#   # control = glmerControl(
+#     # optimizer="bobyqa", optCtrl = list(maxfun=2e5)
+#     # )
+#             )
 # summary(m25cm_unscaled)# Convergence failure warning: "rescale variables"
 ## Use unscaled model for some visualizations
 # summary(m25cm)
 
 ```
 
-Best model formulation based on AIC uses maximum temperature variable 
+The best model based on AIC uses maximum temperature at 25 cm when compared to other models with alternate temperature variables (probe height or temperature residence time/heat flux >100 ºC), but adding a temperature variable doesn't improve AIC over a model with only tree height and flame height.
 
 
 ```{r testing models, eval=FALSE}
@@ -1450,137 +1362,1048 @@ sjPlot::plot_model(m4, type = "est", show.values = T)
 
 ```
 
-Build separate models for the various relationships of interest using subsets of the data as appropriate for response variables aggregated to the plot such as temperature and flame height
 
-```{r tree survival}
 
-library(nlme)
+# RESULTS Most Relevant to Manuscript
+```{r add scaled variables for modeling}
+
+# write_csv(tree_agg_plot_data,"data/tree_mortality_model_data.csv")
+
+## Read-in data if needed
+# tree_agg_plot_data <- read_csv("data/tree_mortality_model_data.csv")
+
+## Rescale variables
+### Continuous: center and divide by 2 standard deviations, 'scl'
+model_data <- tree_agg_plot_data %>% 
+  # mutate(tree_id = paste(Plot, ))
+  group_by(probe_ht) %>%
+  # ungroup(.) %>%
+  # filter(probe_ht=="50cm") %>% 
+  # select(survival, avg_max_temp:avg_flameht_cm, char_ht_cm, ht2_cm, veg_trt, water_trt, Plot, tree_id, Ind.) %>% 
+  mutate(
+    max_temp_scl = (avg_max_temp-mean(avg_max_temp))/(2*sd(avg_max_temp)),
+    maxt_scale = scale(avg_max_temp),
+    
+    s_abv100_scl = (avg_s_abv_100-mean(avg_s_abv_100))/(2*sd(avg_s_abv_100)),
+    sabv100_scale = scale(avg_s_abv_100),
+         
+    heat_flux_scl = (avg_heat_flux100-mean(avg_heat_flux100))/(2*sd(avg_heat_flux100)),
+    hflux_scale = scale(avg_heat_flux100),
+    
+    dry_wt_scl = (avg_dry_wt-mean(avg_dry_wt))/(2*sd(avg_dry_wt)),
+    wt_scale = scale(avg_dry_wt),
+    
+    fuel_ht_scl = (avg_fuel_ht_cm-mean(avg_fuel_ht_cm))/(2*sd(avg_fuel_ht_cm)),
+    fuelht_scale = scale(avg_fuel_ht_cm),
+    
+    tree_ht_scl =  (ht2_cm-mean(ht2_cm))/(2*sd(ht2_cm)),
+    treeht_scale = scale(ht2_cm),
+    
+    flame_ht_scl =  (avg_flameht_cm-mean(avg_flameht_cm))/(2*sd(avg_flameht_cm)),
+    flameht_scale = scale(avg_flameht_cm),
+    
+    char_ht_scl = (char_ht_cm-mean(char_ht_cm))/(2*sd(char_ht_cm)),
+    charht_scale = scale(char_ht_cm),
+    
+    veg_trt = factor(veg_trt, levels = c("Reference", "Invaded")),
+    
+    veg_trt_code = recode_factor(veg_trt, "Reference" = 0, "Invaded" = 1),
+    water_trt_code = recode_factor(water_trt, "Ambient" = 0 , "Drought" = 1)
+    
+         ) %>% 
+  ungroup(.) %>% 
+  mutate(Plot = as.factor(Plot),
+         tree_id = paste(Plot, Ind., sep = ""))
+# summary(model_data)
+
+dat0cm <- droplevels(filter(model_data, probe_ht=="0cm"))
+dat25cm <- droplevels(filter(model_data, probe_ht=="25cm"))
+dat50cm <- droplevels(filter(model_data, probe_ht=="50cm"))
+
+# summary(select(dat0cm, tree_ht_scl, heat_flux_scl, flame_ht_scl))
+# summary(select(dat25cm, tree_ht_scl, heat_flux_scl, flame_ht_scl))
+# summary(select(dat50cm, tree_ht_scl, heat_flux_scl, flame_ht_scl))
+
+```
+
+## Tree Plot Level Response Models
+These models and figures use only data from plots that had trees in them at the time of the fires (n=32).
+
+```{r tree plots data}
+tree_plots_dat <- filter(agg_plot_data, Plot %in% unique(dat25cm$Plot))
+
+## 32 unique plots, temperature values from 3 probe height levels
+# n_distinct(tree_plots_dat$Plot)
+```
+
+### Tree Height Model
+
+Illustrate the effect of treatments (drought and invasion) on tree heights.
+
+```{r model tree height}
+
+library(lme4)
 library(sjPlot)
 
-library(rstanarm)
+(tree_ht_boxplot <- ggplot(dat25cm, 
+       aes(water_trt, ht2_cm)) +
+  geom_boxplot(aes(fill = veg_trt), alpha = 0, show.legend = FALSE) +
+  geom_point(aes(color = veg_trt, shape = water_trt), position = position_jitterdodge(dodge.width = .75), alpha = 1, size = 4) +
+  scale_shape_discrete(solid = FALSE) +
+  invasion_fill +
+  invasion_color +
+  theme_classic() +
+  def_theme +
+  xlab("") +
+  ylab("Tree height (cm)") +
+  theme(legend.position = "none",
+        legend.title = element_blank(),
+        legend.text = element_text(size = 12))
+)
 
-options(mc.cores = parallel::detectCores())
+ggsave("figures/treeht_trt_boxplot.pdf", width = 7, height = 7, dpi = 600)
 
-surv1 <- stan_glmer(survival ~ veg_trt*water_trt + (1|Plot), data = dat25cm,
-                   family = binomial(link = "logit"))
-print(surv1, digits = 3)
-s1_r2 <- bayes_R2(surv1)
-print(median(s1_r2))# 0.24
-
-
-m25cm1 <- glmer(
-  survival ~ tree_ht_scl + flame_ht_scl + max_temp_scl + (1|Plot), 
-  family = binomial(link = logit), data = dat25cm)
-summary(m25cm1)
-rsquared(m25cm1)
-MuMIn::r.squaredGLMM(m25cm1)
-plot_model(m25cm1, show.values = T)
-plot_model(m25cm1, type = "pred", pred.type = "re", show.data = T)
-
-m25cm2 <- glmer(
-  survival ~ ht2_cm + avg_flameht_cm + avg_max_temp + (1|Plot), 
-  family = binomial(link = logit), data = dat25cm)
-plot_model(m25cm2, type = "pred", pred.type = "re", show.data = T)
-
-
-m1 <- stan_glmer(survival ~ tree_ht_scl + flame_ht_scl + max_temp_scl + (1 | Plot), data = dat25cm, family = binomial(link = "logit"), prior = student_t(4,0,2.5))
-print(m1, digits = 3)
-plot(m1)
-m1_rsq <- bayes_R2(m1)
-print(median(m1_rsq))# 0.58
+knitr::kable(dat25cm %>% 
+         group_by(veg_trt, water_trt) %>% 
+         summarise(nobs = length(ht2_cm),
+                   avg_ht = mean(ht2_cm),
+                   sd = sd(ht2_cm, na.rm = T)),
+         digits = 1, caption = "Average tree height")
 
 
-m50cm1 <- glmer(
-  survival ~ tree_ht_scl + flame_ht_scl + max_temp_scl + (1|Plot), 
-  family = binomial(link = logit), data = dat50cm)
-summary(m50cm1)
-MuMIn::r.squaredGLMM(m50cm1)
-rsquared(m50cm1)
-
-m2 <- stan_glmer(survival ~ tree_ht_scl + flame_ht_scl + max_temp_scl + (1 | Plot), data = dat50cm, family = binomial(link = "logit"), prior = student_t(4,0,2.5))
-print(m2, digits = 3)
-m2_rsq <- bayes_R2(m2)
-print(median(m2_rsq))# 0.57
-
-## tree height model ####
 tree_ht_mod <- lmer(ht2_cm ~ water_trt*veg_trt + (1|Plot), data = dat25cm)
 # plot_model(tree_ht_mod, type = "diag")
-plot_model(tree_ht_mod, type = "int", pred.type = "re")
-plot_model(tree_ht_mod, show.values = T)
 summary(tree_ht_mod)
+
+broom::tidy(tree_ht_mod) %>% 
+  knitr::kable(., caption = "Tree height model results")
+
+tree_ht_mod_coefs <- plot_model(tree_ht_mod, show.values = T, color = "bw", 
+                                value.size = 6)
+tree_ht_mod_coefs$data$term <- c("Drought","Invaded","Invaded X Drought")
+
+tree_ht_mod_coefs +
+  theme_classic() +
+  geom_hline(yintercept = 0, color = "grey90") +
+  ggtitle("") +
+  ylab("Est. effect on tree height (cm)") +
+  def_theme +
+  theme(axis.text = element_text(color = "black")) +
+  NULL
+
+# plot_model(tree_ht_mod, type = "int", pred.type = "re") +
+#   invasion_color +
+#   theme_classic() +
+#   ggtitle("") +
+#   ylab("Tree height (cm)") +
+#   xlab("Ambient - Drought") +
+#   def_theme +
+#   NULL
+
+ggsave("figures/treeht_coef.pdf", height = 7, width = 7, dpi = 600)
+# PNAS recommended max height: 54 picas / 9” / 22.5 cm. 
+# Use one of the following widths: 
+# 1 column wide (20.5 picas / 3.42” / 8.7 cm) 
+# 1.5 columns wide (27 picas / 4.5” / 11.4 cm) 
+# 2 columns wide (42.125 picas / 7” / 17.8 cm)
+
+
+MuMIn::r.squaredGLMM(tree_ht_mod)# plot random effect increase R2 over 2x
+
+```
+
+### Fuel Loads
+
+Illustrate effects of treatments (drought and invasion) on fuel loads.
+
+```{r fuel loads figure}
+
+(fuel_loads_boxplot <- tree_plots_dat %>% filter(probe_ht=="25cm") %>%
+  ggplot(aes(water_trt, .001*avg_dry_wt*16)) +
+  geom_boxplot(aes(color = veg_trt), alpha = .2, show.legend = FALSE, outlier.shape = NA) +
+  geom_point(aes(color = veg_trt, shape = water_trt), position = position_jitterdodge(dodge.width = .75), alpha = 1, size = 4) +
+  scale_shape_discrete(solid = FALSE) +
+  scale_y_continuous(limits = c(0,2)) +
+  invasion_fill +
+  invasion_color +
+  theme_classic() +
+  def_theme +
+  xlab("") +
+  ylab(expression(paste("Fuel load (kg ", {m}^-2, ")"), sep = "")) +
+  theme(legend.position = c(.15, .9),
+        legend.margin = margin(-8,-1,-8,-1))
+)
+
+ggsave("figures/fuel_load_trt_boxplot.pdf", width = 7, height = 7, dpi = 600)
+
+```
+
+```{r fuel load table ms}
+
+knitr::kable(tree_plots_dat %>% filter(probe_ht=="25cm") %>% 
+    group_by(water_trt, veg_trt) %>% 
+    summarise(avg_drywt_kg_m2 = mean(.001*avg_dry_wt*16),
+              nobs = length(avg_dry_wt),
+              se_drywt_kg = sd(.001*avg_dry_wt*16)/sqrt(nobs)) %>% 
+      select(-nobs),
+    digits = 2, caption = "Average fuel loads by treatment from sample dry weights (kg/m2)")
+
+```
+
+```{r fuel load model ms}
+
+fuel_load_model <- lm(avg_dry_wt ~ veg_trt + water_trt, 
+                      data = tree_plots_dat %>% filter(probe_ht=="25cm"))
+summary(fuel_load_model)
+
+broom::tidy(fuel_load_model) %>% 
+  knitr::kable(., caption = "Fuel load model results", digits = 2)
+
+```
+
+### Fuel moisture
+
+```{r fuel moisture fig}
+
+(fuel_moisture_boxplot <- tree_plots_dat %>% filter(probe_ht=="25cm") %>%
+  ggplot(aes(water_trt, avg_fuel_moisture)) +
+  geom_boxplot(aes(color = veg_trt), alpha = 0, show.legend = FALSE) +
+  geom_point(aes(color = veg_trt, shape = water_trt), position = position_jitterdodge(dodge.width = .75), alpha = 1, size = 4) +
+  scale_shape_discrete(solid = FALSE) +
+  scale_y_continuous(limits = c(0,NA))+
+  invasion_fill +
+  invasion_color +
+  theme_classic() +
+  def_theme +
+  xlab("") +
+  ylab("Fuel moisture (%)") +
+  theme(legend.position = "none")
+)
+
+ggsave("figures/fuel_moisture_trt_boxplot.pdf", width = 7, height = 7, dpi = 600)
+
+```
+
+```{r fuel moisture model}
+
+fuel_moisture_model <- lm(avg_fuel_moisture ~ veg_trt + water_trt, 
+                      data = tree_plots_dat %>% filter(probe_ht=="25cm"))
+summary(fuel_moisture_model)
+
+broom::tidy(fuel_moisture_model) %>% 
+  knitr::kable(., caption = "Fuel moisture model results", digits = 2)
+
+```
+
+### Fuel height
+
+```{r fuel height fig}
+
+(fuel_height_boxplot <- tree_plots_dat %>% filter(probe_ht=="25cm") %>%
+  ggplot(aes(water_trt, avg_fuel_ht_cm)) +
+  geom_boxplot(aes(color = veg_trt), alpha = 0, show.legend = FALSE) +
+  geom_point(aes(color = veg_trt, shape = water_trt), position = position_jitterdodge(dodge.width = .75), alpha = 1, size = 4) +
+  scale_shape_discrete(solid = FALSE) +
+  scale_y_continuous(limits = c(0,NA)) +
+  invasion_fill +
+  invasion_color +
+  theme_classic() +
+  def_theme +
+  xlab("") +
+  ylab("Fuel height (cm)") +
+  theme(legend.position = "none")
+)
+
+ggsave("figures/fuelht_trt_boxplot.pdf", width = 7, height = 7, dpi = 600)
+
+```
+
+```{r fuel height model}
+
+fuel_height_model <- lm(avg_fuel_ht_cm ~ veg_trt*water_trt, 
+                      data = tree_plots_dat %>% filter(probe_ht=="25cm"))
+summary(fuel_height_model)
+car::Anova(fuel_height_model, type = "II")
+
+broom::tidy(fuel_height_model) %>% 
+  knitr::kable(., caption = "Fuel height model results", digits = 2)
+
+```
+
+### Fuel load & moisture figure
+
+```{r fuel load height moisture fig}
+
+cowplot::plot_grid(
+  fuel_loads_boxplot +
+    theme(legend.position = c(.15, .85)),
+  fuel_height_boxplot +
+    theme(legend.position = "none"),
+  fuel_moisture_boxplot +
+    theme(legend.position = "none"),
+  ncol = 1, labels = "AUTO"
+)
+
+ggsave("figures/fl_fh_fm_fig_600dpi.pdf",
+       height = 14, width = 6, dpi = 600)
 
 ```
 
 
-```{r plot level response models}
-tree_plots_dat <- filter(agg_plot_data, Plot %in% unique(dat25cm$Plot))
+### Flame height 
 
-## flame height model ####
-flame_ht_mod <- lm(avg_flameht_cm ~ avg_drywt + veg_trt, data = filter(tree_plots_dat, probe_ht == "25cm"))
+Regression model of fuel load and treaments on estimated flame heights. Flame heights were taller in invaded plots. There was no differenct in flame height between ambient and drought plots.
+
+```{r flame height model}
+
+## filter to a single probe height so we don't have pseudo-replication
+flame_ht_mod <- lm(avg_flameht_cm ~ avg_dry_wt + veg_trt, data = filter(tree_plots_dat, probe_ht == "25cm") %>% 
+                     mutate(avg_dry_wt = (avg_dry_wt*16)/1000))
+## tested avg fuel height to no effect
 # plot_model(flame_ht_mod, type = "diag")
-plot_model(flame_ht_mod, type = "pred", terms = c("avg_drywt","veg_trt"), show.data = T)
-summary(flame_ht_mod)
+# summary(flame_ht_mod)
 
-flame_ht_fig <- ggplot(filter(tree_plots_dat, probe_ht == "25cm"),
-                       aes((avg_drywt*16)/1000, avg_flameht_cm),
-                       ) +
-  geom_point(aes(color = veg_trt, shape = water_trt), alpha = 1) +
+# flame_ht_mod2 <- lm(avg_flameht_cm ~ avg_fuel_ht_cm + veg_trt, data = filter(tree_plots_dat, probe_ht == "25cm"))
+# summary(flame_ht_mod2)
+
+### ###
+## Fuel height does not add explanatory power to the model; veg_trt alone (greater flame heights in invaded) explains 80% of the variation in flame height. Fuel load adds about 5% more variation explained
+### ###
+
+# plot_model(flame_ht_mod, type = "pred", terms = c("avg_dry_wt", "veg_trt"), show.data = T) +
+#   invasion_color +
+#   invasion_fill +
+#   ggtitle("")
+
+broom::tidy(flame_ht_mod) %>% 
+  knitr::kable(., caption = "Flame height model results")
+(fh_mod_summary <- summary(flame_ht_mod))
+fh_mod_summary$r.squared
+
+```
+
+```{r flame ht fuel load fig}
+
+fht_mod_pred <- sjPlot::plot_model(flame_ht_mod, type = "pred", terms = c("avg_dry_wt","veg_trt"))
+  
+ggplot() +
+  geom_ribbon(data = fht_mod_pred$data, 
+              aes(x = x, ymin = conf.low, ymax = conf.high, fill = group), alpha = .2, show.legend = FALSE) +
+  geom_line(data = fht_mod_pred$data, 
+            aes(x = x, y = predicted, color = group), show.legend = FALSE) +
+  geom_point(data = filter(tree_plots_dat, probe_ht == "25cm"),
+             aes(x = (avg_dry_wt*16)/1000, y = avg_flameht_cm,
+                 color = veg_trt, shape = water_trt), alpha = 1, size = 4) +
   scale_shape_discrete(solid = FALSE) +
   invasion_color +
   invasion_fill +
-  geom_smooth(aes(color = veg_trt, fill = veg_trt), alpha = .2, method = "lm", show.legend = FALSE) +
-  theme_bw() +
-  # theme_classic() +
+  
+  scale_x_continuous(limits = c(NA, 2)) +
+  theme_classic() +
   def_theme +
-  theme(legend.position = c(.1,.83),
-        legend.margin = margin(-5,-1,-5,-1),
+  theme(legend.position = c(.11,.9),
+        legend.margin = margin(-8,-1,-8,-1),
         legend.direction = "vertical",
         legend.background = element_blank()) +
   xlab(expression(paste("Fuel load (kg ", {m}^-2, ")"), sep = "")) +
   ylab("Flame height (cm)") +
   NULL
 
-## max temp model ####
-max_temp_fig <- ggplot(tree_plots_dat, aes((avg_drywt*16)/1000, avg_max_temp)) +
-  geom_point(aes(color = veg_trt, shape = water_trt), alpha = 1) +
-  scale_shape_discrete(solid = FALSE) +
-  invasion_color +
-  invasion_fill +
-  geom_smooth(aes(color = veg_trt, fill = veg_trt), alpha = .2, method = "lm", show.legend = FALSE) +
-  # geom_text(data = fig_labels, aes(label = panel_id), fontface = "bold") +
-  facet_grid(probe_ht~.) +
-  theme_bw() +
-  # theme_classic() +
-  def_theme +
-  theme(legend.position = "none", 
-        legend.direction = "vertical",
-        legend.background = element_blank()) +
-  xlab(expression(paste("Fuel load (kg ", {m}^-2, ")"), sep = "")) +
-  ylab("Maximum temperature (ºC)")
-
-maxtemp25cm <- lm(avg_max_temp ~ avg_drywt + veg_trt, data = filter(tree_plots_dat, probe_ht == "25cm"))
-summary(maxtemp25cm)
-plot_model(maxtemp25cm, type = "diag")
-
-maxtemp50cm <- lm(avg_max_temp ~ avg_drywt + veg_trt, data = filter(tree_plots_dat, probe_ht == "50cm"))
-summary(maxtemp50cm)
-
-sabv100_50cm <- lm(avg_s_abv_100 ~ avg_drywt*veg_trt, data = filter(tree_plots_dat, probe_ht == "50cm"))
-summary(sabv100_50cm)
-
-hflux_50cm <- lm(avg_heat_flux100 ~ avg_drywt + veg_trt, data = filter(tree_plots_dat, probe_ht == "50cm"))
-summary(hflux_50cm)
+ggsave("figures/fh_fig_7x7_600dpi.png",
+       height = 7, width = 7, units = "in", dpi = 600)
+# PNAS recommended max height: 54 picas / 9” / 22.5 cm. 
+# Use one of the following widths: 
+# 1 column wide (20.5 picas / 3.42” / 8.7 cm) 
+# 1.5 columns wide (27 picas / 4.5” / 11.4 cm) 
+# 2 columns wide (42.125 picas / 7” / 17.8 cm)
 
 
 ```
 
 
-### Build path model leading to tree mortality
+### Temperatures
+
+```{r max temp models}
+# separate temperature models for each probe height (0 cm, 25 cm, 50 cm)
+
+maxtemp <- lm(avg_max_temp ~ avg_dry_wt + avg_fuel_ht_cm + probe_ht*veg_trt, data = tree_plots_dat)
+summary(maxtemp)
+car::vif(maxtemp)
+broom::tidy(maxtemp) %>% 
+  knitr::kable(.)
+
+maxtemp0cm <- lm(avg_max_temp ~ avg_dry_wt + veg_trt, data = filter(tree_plots_dat, probe_ht == "0cm") %>% 
+                   mutate(avg_dry_wt = (avg_dry_wt*16)/1000))
+summary(maxtemp0cm)
+sjPlot::plot_model(maxtemp0cm, type = "pred", terms = c("avg_dry_wt","veg_trt"), show.data = TRUE) + invasion_color + invasion_fill
+
+maxtemp25cm <- lm(avg_max_temp ~ avg_dry_wt + veg_trt, data = filter(tree_plots_dat, probe_ht == "25cm") %>% 
+                   mutate(avg_dry_wt = (avg_dry_wt*16)/1000))
+summary(maxtemp25cm)
+# plot_model(maxtemp25cm, type = "diag")
+
+maxtemp50cm <- lm(avg_max_temp ~ avg_dry_wt + veg_trt, data = filter(tree_plots_dat, probe_ht == "50cm")%>% 
+                   mutate(avg_dry_wt = (avg_dry_wt*16)/1000))
+summary(maxtemp50cm)
+
+
+
+maxtemp_pred_data <- rbind(
+  ggeffects::ggpredict(maxtemp0cm, terms = c("avg_dry_wt","veg_trt")) %>% 
+    mutate(location = "0 cm"),
+  ggeffects::ggpredict(maxtemp25cm, terms = c("avg_dry_wt","veg_trt")) %>% 
+    mutate(location = "25 cm"),
+  ggeffects::ggpredict(maxtemp50cm, terms = c("avg_dry_wt","veg_trt")) %>% 
+    mutate(location = "50 cm")
+) %>% 
+  mutate(location = factor(location, levels = c("50 cm","25 cm", "0 cm")))
+
+```
+
+
+
+
+```{r s abv 100 models}
+
+sabv100 <- lm(avg_s_abv_100 ~ scale(avg_dry_wt) + scale(avg_fuel_ht_cm) + probe_ht*veg_trt, data = tree_plots_dat)
+summary(sabv100)
+car::vif(sabv100)
+broom::tidy(sabv100) %>% 
+  knitr::kable(.)
+
+sabv100_50cm <- lm(avg_s_abv_100 ~ avg_dry_wt + veg_trt + avg_fuel_ht_cm, data = filter(tree_plots_dat, probe_ht == "50cm")%>% 
+                   mutate(avg_dry_wt = (avg_dry_wt*16)/1000))
+summary(sabv100_50cm)
+sjPlot::plot_model(sabv100_50cm, type = "diag")
+sjPlot::plot_model(sabv100_50cm, type = "pred", terms = c("avg_dry_wt","veg_trt","avg_fuel_ht_cm"), show.data = TRUE) +
+  invasion_color + invasion_fill
+
+sabv100_25cm <- lm(avg_s_abv_100 ~ avg_dry_wt + veg_trt + avg_fuel_ht_cm, data = filter(tree_plots_dat, probe_ht == "25cm") %>% 
+                   mutate(avg_dry_wt = (avg_dry_wt*16)/1000))
+summary(sabv100_25cm)
+sjPlot::plot_model(sabv100_25cm, type = "diag")
+sjPlot::plot_model(sabv100_25cm, type = "pred", terms = c("avg_dry_wt","veg_trt","avg_fuel_ht_cm"), show.data = TRUE) +
+  invasion_color + invasion_fill
+
+
+sabv100_0cm <- lm(avg_s_abv_100 ~ avg_dry_wt + veg_trt + avg_fuel_ht_cm, data = filter(tree_plots_dat, probe_ht == "0cm") %>% 
+                   mutate(avg_dry_wt = (avg_dry_wt*16)/1000))
+summary(sabv100_0cm)
+sjPlot::plot_model(sabv100_0cm, type = "diag")
+sjPlot::plot_model(sabv100_0cm, type = "pred", terms = c("avg_dry_wt","veg_trt","avg_fuel_ht_cm"), show.data = TRUE) +
+  invasion_color + invasion_fill
+
+
+
+## Predictions adjusted for average fuel height of 31.85 cm
+sabv_pred_data <- rbind(
+  ggeffects::ggpredict(sabv100_0cm, terms = c("avg_dry_wt","veg_trt")) %>% 
+    mutate(location = "0 cm"),
+  ggeffects::ggpredict(sabv100_25cm, terms = c("avg_dry_wt","veg_trt")) %>% 
+    mutate(location = "25 cm"),
+  ggeffects::ggpredict(sabv100_50cm, terms = c("avg_dry_wt","veg_trt")) %>% 
+    mutate(location = "50 cm")
+) %>% 
+  mutate(location = factor(location, levels = c("50 cm","25 cm", "0 cm")))
+
+
+# hflux_mod <- lm(avg_heat_flux100 ~ avg_dry_wt + probe_ht + veg_trt, data = tree_plots_dat)
+# summary(hflux_mod)
+
+```
+
+
+Fire temperature averages for plots with trees (n=32).
+
+```{r temperatures figure1 ms}
+
+# fig_labels <- data.frame(
+#   probe_ht = c("50cm","25cm","0cm"), 
+#   panel_id = c("A","B","C"),
+#   avg_dry_wt=c(.1,.1,.1), 
+#   avg_max_temp=c(1050,1050,1050))
+
+(max_temp_pred_fig <- ggplot() +
+  geom_ribbon(data = maxtemp_pred_data, 
+              aes(x = x, ymin = conf.low, ymax = conf.high, fill = group),
+              alpha = .2) +
+  geom_line(data = maxtemp_pred_data, aes(x = x, y = conf.low, color = group), linetype = "dashed", show.legend = FALSE) +
+  geom_line(data = maxtemp_pred_data, aes(x = x, y = conf.high, color = group), linetype = "dashed", show.legend = FALSE) +
+  
+  geom_line(data = maxtemp_pred_data, aes(x = x, y = predicted, color = group), show.legend = FALSE, size = .75) +
+  
+  geom_point(data = tree_plots_dat, 
+             aes(x = (avg_dry_wt*16)/1000, y = avg_max_temp, 
+                 color = veg_trt, shape = water_trt), 
+             alpha = 1, size = 4) +
+  scale_shape_discrete(solid = FALSE) +
+  
+  invasion_color +
+  invasion_fill +
+  facet_grid(location~.) +
+  
+  xlab(expression(paste("Fuel load (kg ", {m}^-2, ")"), sep = "")) +
+  ylab("Maximum temperature (ºC)") +
+  
+  theme_bw() +
+  def_theme +
+  theme(legend.position = "none", 
+        legend.direction = "vertical",
+        legend.background = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_text(color = "white")) +
+  NULL
+)
+
+ggsave("figures/maxtemp_pred.png", max_temp_pred_fig, 
+       width = 3.5, height = 7, dpi = 600)
+
+
+## Raw data figure of maximum temperature
+# (max_temp_fig <- ggplot(tree_plots_dat, aes((avg_dry_wt*16)/1000, avg_max_temp)) +
+#   geom_point(aes(color = veg_trt, shape = water_trt), alpha = 1, size = 4) +
+#   scale_shape_discrete(solid = FALSE) +
+#   invasion_color +
+#   invasion_fill +
+#   geom_smooth(aes(color = veg_trt, fill = veg_trt), alpha = .2, method = "lm", show.legend = FALSE) +
+#   # geom_text(data = fig_labels, aes(label = panel_id), fontface = "bold") +
+#   facet_grid(probe_ht~.) +
+#     scale_x_continuous(limits = c(0,2)) +
+#   theme_bw() +
+#   def_theme +
+#   theme(legend.position = "none", 
+#         legend.direction = "vertical",
+#         legend.background = element_blank()) +
+#   xlab(expression(paste("Fuel load (kg ", {m}^-2, ")"), sep = "")) +
+#   ylab("Maximum temperature (ºC)")
+# )
+
+## time above 100 ºC ####
+# fig_labels <- data.frame(
+#   probe_ht = c("50cm","25cm","0cm"), 
+#   panel_id = c("D","E","F"),
+#   avg_dry_wt=c(-.1,-.1,-.1), 
+#   avg_s_abv_100=c(300,300,300))
+
+
+(sabv_100_pred_fig <- ggplot() +
+  geom_ribbon(data = sabv_pred_data, 
+              aes(x = x, ymin = conf.low, ymax = conf.high, fill = group),
+              alpha = .2, show.legend = FALSE) +
+  geom_line(data = sabv_pred_data, aes(x = x, y = conf.low, color = group), linetype = "dashed", show.legend = FALSE) +
+  geom_line(data = sabv_pred_data, aes(x = x, y = conf.high, color = group), linetype = "dashed", show.legend = FALSE) +
+  
+  geom_line(data = sabv_pred_data, aes(x = x, y = predicted, color = group), show.legend = FALSE, size = .75) +
+  
+  geom_point(data = tree_plots_dat, 
+             aes(x = (avg_dry_wt*16)/1000, y = avg_s_abv_100, 
+                 color = veg_trt, shape = water_trt), 
+             alpha = 1, size = 4) +
+  scale_shape_discrete(solid = FALSE) +
+  
+  invasion_color +
+  invasion_fill +
+  facet_grid(location~.) +
+  
+  xlab(expression(paste("Fuel load (kg ", {m}^-2, ")"), sep = "")) +
+  ylab("Seconds >100 ºC") +
+  
+  theme_bw() +
+  def_theme +
+  theme(legend.position = "none", 
+        legend.direction = "vertical",
+        legend.background = element_blank(),
+        legend.margin = margin(-8,-1,-8,-1)
+        # strip.background = element_blank(),
+        # strip.text = element_text(color = "white")
+        ) +
+  NULL
+)
+
+ggsave("figures/sabv_100_pred.png", sabv_100_pred_fig, 
+       width = 3.5, height = 7, dpi = 600)
+
+# ggsave("figures/sabv_100_pred_legend.png", sabv_100_pred_fig, 
+       # width = 3.5, height = 7, dpi = 600)
+
+## Raw data figure of seconds abve 100 ºC
+# (time_abv_100_fig <- ggplot(tree_plots_dat, aes((avg_dry_wt*16)/1000, avg_s_abv_100)) +
+#   geom_point(aes(color = veg_trt, shape = water_trt), size = 4) +
+#   scale_shape_discrete(solid = FALSE) +
+#   invasion_color +
+#   invasion_fill +
+#   geom_smooth(aes(color = veg_trt, fill = veg_trt), alpha = .2, method = "lm", show.legend = FALSE) +
+#   scale_x_continuous(limits = c(0,2)) +
+#   
+#   # geom_text(data = fig_labels, aes(label = panel_id), fontface = "bold") +
+#   
+#   facet_grid(probe_ht~.) +
+#   theme_bw() +
+#   def_theme +
+#   theme(legend.direction = "vertical",
+#         legend.background = element_blank()) +
+#   xlab(expression(paste("Fuel load (kg ", {m}^-2, ")"), sep = "")) +
+#   ylab("Temperature residence time (s >100ºC)")
+# )
+
+cowplot::plot_grid(
+  max_temp_pred_fig +
+    theme(strip.background = element_blank(),
+          strip.text = element_text(color = "white"),
+          legend.margin = margin(t = -3, r = 0, b = -3, l = 0),
+          legend.position = "none"
+          ),
+  
+  sabv_100_pred_fig +
+    theme(
+          legend.margin = margin(-8,-1,-8,-1),
+          # legend.position = c(.85,.9),
+          legend.position = "right",
+          legend.direction = "vertical"),
+  rel_widths = c(1,1.3)
+  )
+
+# ggsave("figures/fire_temperatures_7x7_600dpi.png",
+       # height = 7, width = 7, units = "in", dpi = 600)
+# PNAS recommended max height: 54 picas / 9” / 22.5 cm. 
+# Use one of the following widths: 
+# 1 column wide (20.5 picas / 3.42” / 8.7 cm) 
+# 1.5 columns wide (27 picas / 4.5” / 11.4 cm) 
+# 2 columns wide (42.125 picas / 7” / 17.8 cm)
+
+```
+
+
+## Post-fire tree survival
+
+
+```{r char height fig ms}
+
+(char_ht_boxplot <- tree_dmg %>%
+  ggplot(aes(water_trt, char_ht_cm)) +
+  geom_boxplot(aes(color = veg_trt), show.legend = FALSE) +
+  geom_point(aes(color = veg_trt, shape = water_trt), position = position_jitterdodge(dodge.width = .75), alpha = 1, size = 4) +
+  scale_shape_discrete(solid = FALSE) +
+  invasion_fill +
+  invasion_color +
+  theme_classic() +
+  def_theme +
+  xlab("") +
+  ylab("Char height (cm)") +
+  theme(legend.position = "top")
+)
+
+ggsave("figures/char_ht_600dpi.png", dpi = 600, width = 3.42, height = 3.42)
+
+```
+
+Box-plot showing the proportion of trees in each plot (n=32) that survived the fires.
+
+```{r summarize llp survival ms}
+
+tree_surv_plot <- tree_dmg %>% 
+  group_by(Plot, water_trt, veg_trt) %>% 
+  summarise(survival = sum(survival)/length(survival))
+
+(pct_surv_boxplot <- ggplot(tree_surv_plot, aes(water_trt, survival*100)) +
+  geom_boxplot(aes(color = veg_trt), alpha = 1, show.legend = FALSE, outlier.shape = NA) +
+  geom_point(aes(color = veg_trt, shape = water_trt), size = 4,
+             position = position_jitterdodge(dodge.width = .75)) +
+  scale_shape_discrete(solid = FALSE) +
+  # stat_summary(fun.data = "mean_se", geom = "pointrange", position = position_dodge(width = .5), size = 1) +
+  invasion_fill +
+  invasion_color +
+  theme_classic() +
+  def_theme +
+  xlab("") +
+  ylab("% Survival") +
+  theme(legend.position = "none")
+)
+
+ggsave("figures/pct_survival_boxplot.pdf", width = 7, height = 7, dpi = 600)
+
+```
+
+Table summarizing number of plots in each treatment combination with total number of trees and the proportion of the total trees that survived in each treatment group. This table is complementary to the box-plot above.
+
+```{r tree survival summary table ms}
+
+tree_dmg %>% 
+  group_by(water_trt, veg_trt) %>% 
+  summarise(plots = n_distinct(Plot),
+            trees = length(tree_id),
+            dead = sum(dead),
+            pct_survival = 100*sum(survival)/length(survival),
+            sd_pct_survival = 100*(sd(survival, na.rm = TRUE))) %>% 
+  knitr::kable(., digits = 2)
+
+```
+
+
+```{r ht load survival boxplots ms}
+
+cowplot::plot_grid(
+  pct_surv_boxplot +
+    theme(legend.position = c(.15,.15),
+          legend.background = element_blank(),
+          # legend.box.margin = margin(-5,-1,10, 1),
+          axis.text.x = element_text(colour = "white"),
+          axis.text.y = element_text(colour = "black")),
+  tree_ht_boxplot +
+    theme(legend.position = "none",
+          axis.text.x = element_text(colour = "white"),
+          axis.text.y = element_text(colour = "black")),
+  fuel_loads_boxplot +
+    theme(legend.position = "none",
+          axis.text = element_text(color = "black")),
+  ncol = 1, labels = "AUTO"
+)
+
+ggsave("figures/boxplots_600dpi.png",
+       height = 9, width = 4.5, units = "in", dpi = 600)
+# PNAS recommended max height: 54 picas / 9” / 22.5 cm. 
+# Use one of the following widths: 
+# 1 column wide (20.5 picas / 3.42” / 8.7 cm) 
+# 1.5 columns wide (27 picas / 4.5” / 11.4 cm) 
+# 2 columns wide (42.125 picas / 7” / 17.8 cm)
+
+```
+
+
+
+## Tree survival models - tree level
+156 trees, 32 plots
+
+```{r Bayesian model, eval=FALSE}
+## Chris guided me through setting up a few Bayesian models to overcome the singular fits and optimization issues with lme4::glmer
+
+# Bayesian model to check drought and invasion effects
+# library(rstanarm)
+
+options(mc.cores = parallel::detectCores())
+
+surv1 <- rstanarm::stan_glmer(survival ~ veg_trt*water_trt + (1|Plot), 
+                              data = dat25cm,
+                              family = binomial(link = "logit"))
+print(surv1, digits = 3)
+s1_r2 <- rstanarm::bayes_R2(surv1)
+print(median(s1_r2))# 0.24
+plot(surv1)
+
+## Using this method we were able to "recover" the effect of the treatments that are easily seen in the summary figures in the model results.
+
+```
+
+Present results from models of tree survival using only tree height and flame height, or include maximum temperature?
+
+
+### Model Results: scaled coefficients
+
+Coefficients were scaled by subtracting the mean and dividing by two standard deviations (Gelman).
+
+```{r tree survival scaled coefficients model}
+
+library(lme4)
+library(sjPlot)
+
+# "scale" variables = subtract mean & divide by 1 SD
+# "scl" variables = subtract mean & divide by 2 SD
+
+# surv_veg_wtr <- glmer(survival ~ veg_trt*water_trt + (1|Plot),
+#                               data = dat25cm,
+#                               family = binomial(link = "logit"))
+# summary(surv_veg_wtr)
+# convergence code: 0
+# unable to evaluate scaled gradient
+# Model failed to converge: degenerate  Hessian with 1 negative eigenvalues
+## Problem from interaction term
+
+## Model using scaled variables
+surv_scl <- glmer(
+  survival ~ treeht_scale + flameht_scale + maxt_scale + sabv100_scale + (1|Plot), 
+  family = binomial(link = logit), data = dat25cm)
+summary(surv_scl)
+MuMIn::r.squaredGLMM(surv_scl)# indicates limited variation from random effect
+
+plot_model(surv_scl, show.values = T, colors = "bw") + 
+  theme_classic() +
+  geom_hline(yintercept = 1, color = "grey50")
+
+plot_model(surv_scl, type = "pred", pred.type = "re", show.data = T)
+
+surv_scl_no_temp <- glmer(
+  survival ~ treeht_scale + flameht_scale + (1|Plot), 
+  family = binomial(link = logit), data = dat25cm)
+summary(surv_scl_no_temp)
+
+plot_model(surv_scl_no_temp, show.values = T, colors = "bw") + 
+  theme_classic() +
+  geom_hline(yintercept = 1, color = "grey50")
+
+
+broom::tidy(surv_scl) %>% 
+  filter(group!="Plot") %>% 
+  knitr::kable()
+
+surv_scl_coef <- plot_model(surv_scl, show.values = T, colors = "bw",
+                            value.size = 6)
+surv_scl_coef$data$term <- c("Tree ht", "Flame ht", "Max temp", "s >100 ºC")
+
+(surv_scl_mod_coef <- surv_scl_coef +
+  theme_classic() +
+  geom_hline(yintercept = 1, color = "grey80", linetype = "dashed") +
+  ggtitle("") +
+  def_theme +
+  theme(axis.text = element_text(color = "black", size = 20),
+        axis.title = element_text(size = 30)
+        )
+)
+
+ggsave("figures/surv_scaled_coef_plot.pdf", width = 7.5, height = 7.5, dpi = 600)
+# plot_model(surv_scl_no_temp, type = "pred", pred.type = "re", show.data = T)
+
+```
+
+```{r Bayesian models scaled predictors, eval=FALSE}
+
+m1 <- rstanarm::stan_glmer(survival ~ tree_ht_scl + flame_ht_scl + max_temp_scl + (1 | Plot), data = dat25cm, family = binomial(link = "logit"), 
+                           prior = rstanarm::student_t(4,0,2.5)
+                           )
+print(m1, digits = 3)
+plot(m1)
+m1_rsq <- rstanarm::bayes_R2(m1)
+print(median(m1_rsq))# 0.58
+
+m2 <- rstanarm::stan_glmer(survival ~ tree_ht_scl + flame_ht_scl + max_temp_scl + veg_trt + (1 | Plot), data = dat25cm, family = binomial(link = "logit"), prior = rstanarm::student_t(4,0,2.5))
+print(m2, digits = 3)
+plot(m2)
+m2_rsq <- rstanarm::bayes_R2(m2)
+print(median(m2_rsq))# 0.57
+
+## Test temperatures recorded at 50 cm height
+# m50cm1 <- glmer(
+#   survival ~ tree_ht_scl + flame_ht_scl + max_temp_scl + (1|Plot), 
+#   family = binomial(link = logit), data = dat50cm)
+# summary(m50cm1)
+# MuMIn::r.squaredGLMM(m50cm1)# 50cm nor random effect improves R2
+
+```
+
+The plotted model predictions are conditional on the plot-level random effect, i.e., the 95% confidence interval includes the uncertainty due to the unaccounted for variation between plots (assumed to be random variation).
+
+### Model Results: Unscaled without temperature
+
+```{r tree survival unscaled no temp}
+
+surv_unscl <- glmer(
+  survival ~ ht2_cm + avg_flameht_cm + (1|Plot), 
+  family = binomial(link = "logit"), data = dat25cm)
+summary(surv_unscl)
+
+no_temp_model_coef <- plot_model(surv_unscl, show.values = TRUE, colors = "bw",
+                                 value.size = 6)
+no_temp_model_coef$data$term <- c("Tree ht", "Flame ht")
+
+(no_temp_model_coef <- no_temp_model_coef +
+  ylim(c(0.75,1.25)) +
+  theme_classic() +
+  geom_hline(yintercept = 1, color = "grey80", linetype = "dashed") +
+  ggtitle("Unscaled") +
+  def_theme +
+  NULL
+)
+
+no_temp_model_pred <- plot_model(surv_unscl, type = "pred", pred.type = "re", show.data = FALSE)
+
+(no_temp_ht_pred <- no_temp_model_pred$ht2_cm +
+    geom_point(data = dat25cm, aes(x=ht2_cm, y=survival, color = veg_trt, shape = water_trt), size = 2) +
+    invasion_color +
+    scale_shape_discrete(solid = FALSE) +
+  xlab("Tree height (cm)") +
+  ylab("Survival probability") +
+  ggtitle("") +
+  theme_classic() +
+  def_theme +
+  NULL
+)
+
+(no_temp_fh_pred <- no_temp_model_pred$avg_flameht_cm +
+    geom_point(data = dat25cm, aes(x=ht2_cm, y=survival, color = veg_trt, shape = water_trt), size = 4) +
+    invasion_color +
+    scale_shape_discrete(solid = FALSE) +
+  # scale_x_continuous(limits = c(NA, 450)) +
+  xlab("Flame height (cm)") +
+  ylab("Survival probability") +
+  ggtitle("") +
+  theme_classic() +
+  def_theme +
+  theme(
+    legend.position = c(400, 1),
+        legend.margin = margin(-5,-1,-5,-1)) +
+  NULL
+)
+
+```
+
+```{r model results no temp}
+
+broom::tidy(surv_unscl) %>% 
+  knitr::kable(., caption = "Unscaled model coefficients")
+
+cowplot::plot_grid(
+  no_temp_ht_pred,
+  no_temp_fh_pred +
+    ylab(" "),
+  no_temp_model_coef +
+    theme(plot.title = element_text(size = 14, hjust = .5)),
+  surv_scl_mod_coef +
+    theme(axis.text.y = element_blank(),
+          plot.title = element_text(size = 14, hjust = .5)),
+  labels = "AUTO"
+)
+
+ggsave("figures/surv_model_600dpi.png",
+       height = 12, width = 12, units = "in", dpi = 600)
+# PNAS recommended max height: 54 picas / 9” / 22.5 cm. 
+# Use one of the following widths: 
+# 1 column wide (20.5 picas / 3.42” / 8.7 cm) 
+# 1.5 columns wide (27 picas / 4.5” / 11.4 cm) 
+# 2 columns wide (42.125 picas / 7” / 17.8 cm)
+
+broom::tidy(surv_scl_no_temp) %>% 
+  knitr::kable(., caption = "Scaled model coefficients")
+
+```
+
+
+### Model Results: Unscaled with temperature
+
+```{r tree survival unscaled w temp}
+
+## Model using unscaled predictor variables, including max temp
+surv_unscl_2 <- glmer(
+  survival ~ ht2_cm + avg_flameht_cm + avg_max_temp + avg_s_abv_100 + (1|Plot), 
+  family = binomial(link = "logit"), data = dat25cm)
+summary(surv_unscl_2)
+MuMIn::r.squaredGLMM(surv_unscl_2)
+
+temp_model_coef <- plot_model(surv_unscl_2, show.values = T, colors = "bw")
+temp_model_coef$data$term <- c("Tree ht", "Flame ht", "Max temp", "s >100 ºC") 
+
+(temp_model_coef <- temp_model_coef +
+  ylim(c(0.75,1.25)) +
+  theme_classic() +
+  geom_hline(yintercept = 1, color = "grey80", linetype = "dashed") +
+  ggtitle("") +
+  def_theme +
+  NULL
+)
+
+(surv_mod_ht_pred <- plot_model(surv_unscl_2, type = "pred", pred.type = "fe", show.data = F, terms = "ht2_cm") +
+  
+  geom_point(data = dat25cm, aes(x=ht2_cm, y=survival, color = veg_trt, shape = water_trt), size = 4) +
+  
+  scale_shape_discrete(solid = FALSE) +
+  
+  invasion_color +
+  invasion_fill +
+  ylab("Survival probability") +
+  xlab("Tree height (cm)") +
+  ggtitle("") +
+  theme_classic() +
+  def_theme +
+  theme(legend.position = "none",
+        axis.text = element_text(color = "black", size = 24),
+        axis.title = element_text(size = 30)) +
+  NULL
+)
+ggsave("figures/surv_treeht_pred.png", width = 7.5, height = 7.5, dpi = 600)
+
+(surv_mod_fh_pred <- plot_model(surv_unscl_2, type = "pred", pred.type = "re", show.data = F, terms = "avg_flameht_cm") +
+    geom_point(data = dat25cm, aes(x=avg_flameht_cm, y=survival, color = veg_trt, shape = water_trt), size = 4, 
+               position = position_jitterdodge(jitter.width = 5)) +
+  
+  scale_shape_discrete(solid = FALSE) +
+  # scale_x_continuous(limits = c(NA, 450)) +
+
+  invasion_color +
+  # invasion_fill +
+  ylab("Survival probability") +
+  xlab("Flame height (cm)") +
+  ggtitle("") +
+  theme_classic() +
+  def_theme +
+  theme(
+    legend.position = "none",
+    legend.margin = margin(-5,-1,-5,-1),
+    axis.text = element_text(color = "black", size = 24),
+    axis.title = element_text(size = 30)) +
+  NULL
+)
+ggsave("figures/surv_flameht_pred.png", width = 7.5, height = 7.5, dpi = 600)
+
+(surv_mod_temp_pred <- plot_model(surv_unscl_2, type = "pred", pred.type = "re", show.data = T, terms = "avg_max_temp") +
+  invasion_color +
+  invasion_fill +
+  ylab("Survival probability") +
+  xlab("Maximum temperature (ºC)") +
+  ggtitle("") +
+  theme_classic() +
+  def_theme +
+  NULL
+)
+
+```
+
+
+```{r tree survival max temp results plot}
+
+cowplot::plot_grid(
+  surv_mod_ht_pred,
+  surv_mod_fh_pred + ylab(" "),
+  surv_scl_mod_coef,
+  nrow = 1, labels = "AUTO", label_size = 25, 
+)
+
+ggsave("figures/surv_pred_coefs.png", width = 24, height = 7, dpi = 600)
+
+
+```
+
+Model results show that trees were more likely to survive fires if they were taller and if flame heights were lower. Furthermore, temperature measurements (maximum or duration) did not provide additional explanation of tree survival probability. 
+
+INTERPRETATION: We assessed survival by examining for top kill, i.e. all the buds on all the branches and meristem were completely burned (no green left). Our estimates of maximum temperature at the plot-level were all greater than 100 ºC and the minimum time temperatures exceeded 100 ºC was 18.5 s. These minimum values are likely sufficient to kill buds on longleaf pines *if* the flames reach the buds; whether the maximum temperatures are much higher or temperature residence time is much longer appears to be less relevant. Essentially, if the flames generated were tall enough to reach the top or over the top of trees then the temperature and residence time were sufficiently long to result in top-kill. 
+
+
+## Supplemental Information
+
+```{r tree ht dbh}
+
+library(ggpmisc)
+
+summary(lm(ht2_cm ~ dbh_cm, data = tree_survival))
+summary(lm(ht2_cm ~ diam1_mm, data = tree_survival))
+
+form <- y ~ x
+
+ggplot(tree_survival, aes(diam2_mm, ht2_cm)) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = form) +
+  stat_poly_eq(formula = form, parse = TRUE)
+
+
+
+```
+ 
+
+## Build path model leading to tree mortality
+
+Too many issues with the catergorical variables (?) to achieve a fit using SEM methods.
 
 Use rescaled variables in the path model to understand the relative effects. The rescaled variables are centered (subtracting the mean) and then divided by 2 standard deviations to put the continuos variables on the same scale as the categorical variables. 
 
 
-```{r build path model}
+```{r build path model, eval=FALSE}
 ## Tree mortality model
 # m25cm
 # m25cm_unscaled
@@ -1669,8 +2492,6 @@ summary(psem.mod)
 
 
 ```
-
-Too many issues with the catergorical variables (?) to achieve a fit using SEM methods.
 
 
 ```{r lavaan model, eval = F}
