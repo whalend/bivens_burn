@@ -1,4 +1,4 @@
-## Fire temperature processing ----
+## Bivens Fire temperature processing ----
 
 ## load packages ----
 library(plyr)
