@@ -2,11 +2,20 @@
 #' title: "Interacting global change drivers suppress a foundation tree species"	
 #' author: "S.L. Flory, W.W. Dillon, D. Hiatt"	
 #' date: "`r Sys.Date()`"	
-#' output: github_document	
+#' output: 	
+#'   github_document:	
+#'     toc: yes	
 #' ---	
 #' 	
 #' # Abstract 	
 #' Ecological stress caused by climate change, invasive species, anthropogenic disturbance, and other factors is driving global environmental change. These stressors often occur simultaneously but how they interact to impact native species is poorly understood. We used a longer-term (i.e., six years) field experiment to test how two stressors (drought and invasion by the non-native perennial grass *Imperata cylindrica*) interacted to determine effects of a third stressor (fire) on longleaf pine (*Pinus palustris*), the foundation species for a threatened fire-dependent ecosystem in the Southeast USA. Invasion resulted in 65% greater fuel loads, causing over four times taller flames, significantly greater maximum temperatures, and longer heating duration. Invasion combined with prolonged drought also resulted in notably shorter trees than invasion alone, and shorter trees are substantially more vulnerable to mortality due to fire. Consequently, nearly all tree mortality occurred due to a synergistic interaction between fire and the drought + invasion treatment, whereby shorter trees experienced taller flames driven by invasion, resulting in 44% of trees killed by fire. Given average fuel loads in the experiment, modeling predicted that 99% of 2 m tall trees would survive in native vegetation-dominated areas but only 37% of 2 m tall trees would survive in invaded areas due to more intense fires, highlighting an ecosystem-wide benefit of invader prevention and removal. These findings demonstrate that synergy among ecological stressors can result in dramatic impacts on native species, emphasizing that longer-term, multi-factorial, manipulative studies are needed to accurately forecast ecological outcomes of global environmental change.	
+#' 	
+#' 	
+knitr::opts_chunk$set(echo = F)	
+knitr::opts_chunk$set(warning = F)	
+knitr::opts_chunk$set(message = F)	
+#' 	
+#' 	
 #' 	
 #' 	
 library(tidyverse)	
@@ -185,10 +194,9 @@ fuels_data %>% group_by(Treatment) %>%
   summarise(`Avg. Fuels (kg)` = mean(fuels_kg),	
             `SD Fuels (kg)` = sd(fuels_kg),	
             n=length(Treatment))	
-	
 #' 	
 #' 	
-#' # Fuel load model	
+#' <!-- # Fuel load model -->	
 #' 	
 ## Fit model	
 fuels_model <- lm(fuels_kg ~ Treatment, data = fuels_data)	
@@ -208,7 +216,7 @@ fuels_model <- lm(fuels_kg ~ Treatment, data = fuels_data)
 #' 	
 #' <!-- `r equatiomatic::extract_eq(fuels_model)` -->	
 #' 	
-#' # Flame height model	
+#' <!-- # Flame height model -->	
 #' 	
 flame_ht_Treatment <- lm(avg_flameht_cm ~ fuels_kg + Treatment, data = fuels_data)	
 # shapiro.test(residuals(flame_ht_Treatment))# normality: good	
@@ -223,6 +231,8 @@ flame_ht_mod <- lm(avg_flameht_cm ~ fuels_kg + veg_trt, data = fuels_data)
 #' 	
 #' 	
 #' <!-- `r equatiomatic::extract_eq(flame_ht_Treatment)` -->	
+#' 	
+#' <!-- `r equatiomatic::extract_eq(flame_ht_mod)` -->	
 #' 	
 #' 	
 fht_mod_pred <- sjPlot::plot_model(flame_ht_mod, type = "pred", terms = c("fuels_kg","veg_trt"))	
@@ -260,7 +270,7 @@ fht_fl_fig <- ggplot() +
 # fht_fl_fig	
 #' 	
 #' 	
-#' # Maximum temperature and heating duration models	
+#' <!-- # Maximum temperature and heating duration models -->	
 #' 	
 ## Ground level temperatures	
 maxtemp0cm <- lm(avg_max_tempC ~ fuels_kg + veg_trt, data = filter(plots_data, probe_ht == "0cm"))	
@@ -529,7 +539,7 @@ figure1
 #' Effects of drought, invasion, and drought + invasion on fuel loads and fire behavior. Invasion produced greater fuel loads, which affected ecologically important aspects of fire behavior. (A) Average fine fuel loads were 57% greater with invasion than without invasion (means ± SE over data points for each plot). See Table S1 for model results. (B) Greater fuel loads produced significantly taller flames, and flame heights were over four times taller in plots with invasion. (C) Maximum temperatures at 25 cm above ground were higher in invasion and increased with fuel load. (D) Heating duration (time above 100 ºC) at 25 cm above ground was longer with invasion but was unaffected by fuel load. Best fit lines ±95% CI in (B, C, D). Predicted lines in (D) are the average fuel height of 109 cm across all plots. Red/dark = invasion, blue/light = no invasion. Point shapes indicate treatment: square = Reference, triangle = Drought, circle = Invasion, diamond = Drought + Invasion (Dro + Inv).	
 #' 	
 #' 	
-#' # Global change model	
+#' <!-- # Global change model -->	
 #' 	
 library(lme4)	
 library(sjPlot)	
@@ -604,7 +614,7 @@ glob_drivers_mod <- ggplot(ht_trt_pred_plot$data) +
 #' 	
 #' 	
 #' 	
-#' # Mechanistic model	
+#' <!-- # Mechanistic model -->	
 #' 	
 ## Model using unscaled predictor variables, including max temp	
 ## Excludes global drivers (treatment)	
@@ -620,6 +630,8 @@ mech_model <- glmer(
 # summary(mech_model)	
 # r.squaredGLMM(mech_model)	
 #' 	
+#' 	
+#' <!-- `r equatiomatic::extract_eq(mech_model)` -->	
 #' 	
 #' 	
 	
@@ -864,7 +876,7 @@ figure2
 #' Mechanistic effects of drought, invasion, and drought + invasion on tree survival following fires. (A) Trees in the drought + invasion treatment (diamond) were generally shorter than with invasion alone (circle), and flames were taller in invaded plots (means ±1 SD of tree height and flame height for surviving (filled) and dead (open) trees; small points for individual trees; red/dark = invasion, blue/light = no invasion). (B) As a result, tree mortality under the drought + invasion treatment was much higher (44%) than in reference (10%), invasion alone (10%), or drought alone (no mortality). (C) The model of global change drivers (drought, invasion) effects on tree survival showed that fire survival probability was determined by tree height and invasion, but not drought (dashed line at 100% obscured by points). (D) Tree height and (E) flame height were significant factors determining tree survival in the mechanistic model, which also included maximum temperature and heating duration (but not experimental treatments). Predicted lines ±95% CI; points on C – E are individual trees (vertically jittered for visibility), shape indicates plot treatment.	
 #' 	
 #' 	
-#' # Management Model	
+#' <!-- # Management Model -->	
 #' 	
 #' 	
 management_model <- glmer(	
@@ -878,12 +890,14 @@ management_model <- glmer(
 # r.squaredGLMM(management_model)	
 #' 	
 #' 	
+#' <!-- `r equatiomatic::extract_eq(management_model)` -->	
+#' 	
 #' 	
 ## Survival probability vs. tree height in Reference or Invasion plots	
 tht_veg_drywt_pred <- plot_model(management_model, type = "pred", terms = c("tree_height_cm [n=15]","veg_trt"), pred.type = "fe")	
 ## Prediction for fuel load of 0.91 kg	
 	
-fig3A <- ggplot(data = tht_veg_drywt_pred$data) +	
+fig3a <- ggplot(data = tht_veg_drywt_pred$data) +	
   ylab("Survival probability (%)") +	
   xlab("Tree height (cm)") +	
   scale_y_continuous(labels = relabel_vals,	
@@ -926,7 +940,7 @@ fig3A <- ggplot(data = tht_veg_drywt_pred$data) +
 fuels_veg_tht_pred <- plot_model(management_model, type = "pred", terms = c("fuels_kg [n=25]","veg_trt"), pred.type = "fe")	
 	
 	
-drywt_veg_tht_pred <- ggplot(data = fuels_veg_tht_pred$data) +	
+fig3b <- ggplot(data = fuels_veg_tht_pred$data) +	
   scale_x_continuous(limits = c(0.35, 2.0), expand = c(0, .02)) +	
   scale_y_continuous(labels = relabel_vals, expand = c(0, 0.02)) +	
   ylab("Survival (%)") +	
@@ -979,7 +993,7 @@ surv_fuel_pred_fig <- ggplot(data = surv_fuel_pred_data %>%
 surv_fuel_pred_figB <- ggplot(data = surv_fuel_pred_data %>% 	
                                filter(facet == "Fuel load: 1.2 kg"))	
 	
-surv_fuel_pred_fig <- surv_fuel_pred_fig +	
+fig3c <- surv_fuel_pred_fig +	
   scale_y_continuous(labels = relabel_vals, expand = c(0, 0.02)) +	
   ylab("Survival (%)") +	
   xlab("Tree height (cm)") +	
@@ -1014,9 +1028,9 @@ surv_fuel_pred_fig <- surv_fuel_pred_fig +
         strip.text = element_text(size = 12),	
         ) +	
   NULL	
-# surv_fuel_pred_fig	
+# fig3c	
 	
-surv_fuel_pred_figB <- surv_fuel_pred_figB +	
+fig3d <- surv_fuel_pred_figB +	
   scale_y_continuous(labels = relabel_vals, expand = c(0, 0.02)) +	
   ylab("Survival (%)") +	
   xlab("Tree height (cm)") +	
@@ -1050,16 +1064,16 @@ surv_fuel_pred_figB <- surv_fuel_pred_figB +
   theme(strip.background = element_blank(),	
         strip.text = element_text(size = 12),	
         )	
-# surv_fuel_pred_figB	
+# fig3d	
 #' 	
 #' 	
 #' # Figure 3. Management model predictions	
 #' 	
 	
-p1 <- tht_veg_drywt_pred + theme(legend.position = c(.7,.3))	
-p2 <- drywt_veg_tht_pred  + ylab(" ")	
-p3 <- surv_fuel_pred_fig + ylab("Survival probability (%)") + xlab("")	
-p4 <- surv_fuel_pred_figB + ylab(" ") + xlab("")	
+p1 <- fig3a + theme(legend.position = c(.7,.3))	
+p2 <- fig3b  + ylab(" ")	
+p3 <- fig3c + ylab("Survival probability (%)") + xlab("")	
+p4 <- fig3d + ylab(" ") + xlab("")	
 	
 p <- (p1|p2) / ((p3|p4) + xlab("Tree height (cm)") + 	
                   theme(axis.title.x = element_text(hjust = -1)))	
@@ -1075,7 +1089,9 @@ figure3
 #' 	
 #' 	
 #' # Supplemental Tables	
-#' ## Table S1. Treatment effects on fuel loads	
+#' 	
+#' ## Table S1 Treatment effects on fuel loads	
+#' 	
 #' 	
 broom::tidy(fuels_model) %>% 	
   rename(Term = term, Estimate = estimate, SE = std.error, `t-value` = statistic, `P-value` = p.value) %>% 	
@@ -1084,7 +1100,8 @@ broom::tidy(fuels_model) %>%
 # tab_model(fuels_model)	
 #' 	
 #' 	
-#' ## Table S2. Flame height model summary	
+#' ## Table S2 Flame height model summary	
+#' 	
 #' 	
 broom::tidy(flame_ht_Treatment) %>% 	
   rename(Term = term, Estimate = estimate, SE = std.error, `t-value` = statistic, `P-value` = p.value) %>% 	
@@ -1182,7 +1199,7 @@ gc_pred$data %>%
   knitr::kable(digits = 2, caption = "Predicted tree survival probability following fire from the global change model for specific values of tree height under each treatment.")	
 #' 	
 #' 	
-#' ## Table S8	
+#' ## Table S8. Mechanistic model summary	
 #' 	
 temp_model_coef <- plot_model(mech_model, show.values = T, colors = "bw", digits = 3)	
 temp_model_coef$data$term <- c("Tree ht (cm)", "Flame ht (cm)", "Max temp (ºC)", "s >100 ºC") 	
@@ -1194,7 +1211,7 @@ temp_model_coef$data %>%
 # r.squaredGLMM(mech_model)	
 #' 	
 #' 	
-#' ## Table S9	
+#' ## Table S9. Mechanistic model predictions	
 #' 	
 mm_predictions <- plot_model(mech_model, type = "pred", pred.type = "fe",	
                            terms = c("tree_height_cm [100,150,200,300,400,600]", "avg_flameht_cm [50,94,100,200]"))	
@@ -1208,7 +1225,7 @@ mm_predictions$data %>%
   knitr::kable(digits = 2, caption = "Mechanistic model predictions. Predicted tree survival probability from the mechanistic model for specific values of tree height and flame height. Predictions are for the mean values of maximum temperature (434 ºC) and heating duration (105 seconds).")	
 #' 	
 #' 	
-#' ## Table S10	
+#' ## Table S10. Management model summary	
 #' 	
 invasion_fuel_coef <- plot_model(management_model, show.values = TRUE, digits = 3, color = "bw", ci.style = "whisker")	
 invasion_fuel_coef$data$term <- c("Tree ht (cm)","Fuel load (kg)","Invasion","Fuel load*Invasion")	
@@ -1225,7 +1242,7 @@ invasion_fuel_coef$data %>%
 # )	
 #' 	
 #' 	
-#' ## Table S11	
+#' ## Table S11. Management model summary	
 #' 	
 surv_fuel_pred <- plot_model(	
   management_model, type = "pred", 	

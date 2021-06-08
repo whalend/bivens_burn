@@ -3,6 +3,43 @@ Interacting global change drivers suppress a foundation tree species
 S.L. Flory, W.W. Dillon, D. Hiatt
 2021-06-08
 
+-   [Abstract](#abstract)
+-   [Figure 1. Treatment effects on
+    fire](#figure-1-treatment-effects-on-fire)
+-   [Figure 2. Global change drivers and
+    mechanisms](#figure-2-global-change-drivers-and-mechanisms)
+-   [Figure 3. Management model
+    predictions](#figure-3-management-model-predictions)
+-   [Supplemental Tables](#supplemental-tables)
+    -   [Table S1 Treatment effects on fuel
+        loads](#table-s1-treatment-effects-on-fuel-loads)
+    -   [Table S2 Flame height model
+        summary](#table-s2-flame-height-model-summary)
+    -   [Table S3. Maximum temperature models
+        summaries](#table-s3-maximum-temperature-models-summaries)
+    -   [Table S4. Heating duration models
+        summaries](#table-s4-heating-duration-models-summaries)
+    -   [Table S5. Summary of treatment and fire
+        effects.](#table-s5-summary-of-treatment-and-fire-effects)
+    -   [Table S6. Global change model
+        summary](#table-s6-global-change-model-summary)
+    -   [Table S7. Global change model
+        predictions](#table-s7-global-change-model-predictions)
+    -   [Table S8. Mechanistic model
+        summary](#table-s8-mechanistic-model-summary)
+    -   [Table S9. Mechanistic model
+        predictions](#table-s9-mechanistic-model-predictions)
+    -   [Table S10. Management model
+        summary](#table-s10-management-model-summary)
+    -   [Table S11. Management model
+        summary](#table-s11-management-model-summary)
+-   [Supplemental Figures](#supplemental-figures)
+    -   [Figure S1. Fuel load vs. maximum temperature or heating
+        duration at each probe
+        height](#figure-s1-fuel-load-vs-maximum-temperature-or-heating-duration-at-each-probe-height)
+    -   [Figure S2. Mehanistic model maximum temperature and heating
+        duration](#figure-s2-mehanistic-model-maximum-temperature-and-heating-duration)
+
 # Abstract
 
 Ecological stress caused by climate change, invasive species,
@@ -32,633 +69,26 @@ dramatic impacts on native species, emphasizing that longer-term,
 multi-factorial, manipulative studies are needed to accurately forecast
 ecological outcomes of global environmental change.
 
-``` r
-library(tidyverse)
-```
-
-    ## ── Attaching packages ─────────────────────────────────────── tidyverse 1.3.0 ──
-
-    ## ✓ ggplot2 3.3.3     ✓ purrr   0.3.4
-    ## ✓ tibble  3.1.2     ✓ dplyr   1.0.6
-    ## ✓ tidyr   1.1.3     ✓ stringr 1.4.0
-    ## ✓ readr   1.4.0     ✓ forcats 0.5.1
-
-    ## ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
-    ## x dplyr::filter() masks stats::filter()
-    ## x dplyr::lag()    masks stats::lag()
-
-``` r
-library(readxl)
-library(patchwork)
-require(lme4)
-```
-
-    ## Loading required package: lme4
-
-    ## Loading required package: Matrix
-
-    ## 
-    ## Attaching package: 'Matrix'
-
-    ## The following objects are masked from 'package:tidyr':
-    ## 
-    ##     expand, pack, unpack
-
-``` r
-require(MuMIn)
-```
-
-    ## Loading required package: MuMIn
-
-``` r
-require(DHARMa)
-```
-
-    ## Loading required package: DHARMa
-
-    ## This is DHARMa 0.4.0. For overview type '?DHARMa'. For recent changes, type news(package = 'DHARMa') Note: Syntax of plotResiduals has changed in 0.3.0, see ?plotResiduals for details
-
-``` r
-require(sjPlot)
-```
-
-    ## Loading required package: sjPlot
-
-    ## Registered S3 method overwritten by 'parameters':
-    ##   method     from      
-    ##   ci.blavaan bayestestR
-
-``` r
-require(broom)
-```
-
-    ## Loading required package: broom
-
-``` r
-require(car)
-```
-
-    ## Loading required package: car
-
-    ## Loading required package: carData
-
-    ## Registered S3 methods overwritten by 'car':
-    ##   method                          from
-    ##   influence.merMod                lme4
-    ##   cooks.distance.influence.merMod lme4
-    ##   dfbeta.influence.merMod         lme4
-    ##   dfbetas.influence.merMod        lme4
-
-    ## 
-    ## Attaching package: 'car'
-
-    ## The following object is masked from 'package:dplyr':
-    ## 
-    ##     recode
-
-    ## The following object is masked from 'package:purrr':
-    ## 
-    ##     some
-
-``` r
-require(knitr)
-```
-
-    ## Loading required package: knitr
-
-``` r
-treatment_color <- scale_color_manual(values = c("Reference" = "deepskyblue", "Drought" = "deepskyblue", "Invasion" = "red", "Drought + Invasion" = "red"))
-trt_col <- scale_color_manual(values = c("Reference" = "deepskyblue", "Drought" = "deepskyblue", "Invasion" = "red", "Dro + Inv" = "red"))
-
-treatment_fill <- scale_fill_manual(values = c("Reference" = "deepskyblue", "Drought" = "deepskyblue", "Invasion" = "red", "Drought + Invasion" = "red"))
-trt_fill <- scale_fill_manual(values = c("Reference" = "deepskyblue", "Drought" = "deepskyblue", "Invasion" = "red", "Dro + Inv" = "red"))
-
-treatment_shape <- scale_shape_manual(values = c("Reference" = 22, "Drought" = 24, "Invasion" = 21, "Drought + Invasion" = 23))
-trt_shp <- scale_shape_manual(values = c("Reference" = 22, "Drought" = 24, "Invasion" = 21, "Dro + Inv" = 23))
-
-treatment_lines <- scale_linetype_manual(values = c("Reference" = 1, "Drought" = 2, "Invasion" = 3, "Drought + Invasion" = 4))
-
-invasion_color <- scale_color_manual(values = c("Reference" = "deepskyblue", "Invasion" = "red"))
-invasion_fill <- scale_fill_manual(values = c("Reference" = "deepskyblue", "Invasion" = "red"))
-
-drought_shape <- scale_shape_manual(values = c("Reference" = 22, "Drought" = 24, "Invasion" = 21, "Drought + Invasion" = 23))
-
-short_lab <- c("Reference", "Drought", "Invasion", "Dro + Inv")
-
-trt_surv_fill = scale_fill_manual(
-  values = c(
-    "Drought + Invasion Alive" = "red",
-    "Reference Alive" = "deepskyblue",
-    "Drought Alive" = "deepskyblue",
-    "Invasion Alive" = "red",
-    "Drought + Invasion Dead" = "white",
-    "Reference Dead" = "white",
-    "Drought Dead" = "white",
-    "Invasion Dead" = "white",
-    "Reference" = "deepskyblue", 
-    "Drought" = "deepskyblue", 
-    "Invasion" = "red", 
-    "Drought + Invasion" = "red"
-    )
-)
-
-trt_surv_shape = scale_shape_manual(
-  values = c(
-    "Drought + Invasion Alive" = 23,
-    "Reference Alive" = 22,
-    "Drought Alive" = 24,
-    "Invasion Alive" = 21,
-    "Drought + Invasion Dead" = 23,
-    "Reference Dead" = 22,
-    "Drought Dead" = 24,
-    "Invasion Dead" = 21,
-    "Reference" = 22, 
-    "Drought" = 24, 
-    "Invasion" = 21, 
-    "Drought + Invasion" = 23
-    )
-)
-
-trt_surv_color = scale_color_manual(
-  values = c(
-    "Drought + Invasion Alive" = "red",
-    "Reference Alive" = "deepskyblue",
-    "Drought Alive" = "deepskyblue",
-    "Invasion Alive" = "red",
-    "Drought + Invasion Dead" = "red",
-    "Reference Dead" = "deepskyblue",
-    "Drought Dead" = "deepskyblue",
-    "Invasion Dead" = "red", 
-    "Reference" = "deepskyblue", 
-    "Drought" = "deepskyblue", 
-    "Invasion" = "red", 
-    "Drought + Invasion" = "red"
-    )
-)
-
-def_theme <- theme(legend.title = element_blank(),
-            axis.text = element_text(color = "black"),
-            panel.grid = element_blank()
-            )
-
-dodge <- position_dodge(width=0.9)
-
-pred_plot_theme <- def_theme +
-  theme(legend.position = "none",
-        legend.background = element_blank(),
-        legend.margin = margin(-8,-1,-8,-1),
-        legend.key.height = unit(.75, "line"),
-        axis.text = element_text(color = "black", size = 12),
-        axis.title = element_text(size = 14))
-
-## Figure widths in inches
-fwidth_in1 <- 3.42
-fwidth_in2 <- 4.5
-fwidth_in3 <- 7
-```
-
 <!-- Only uses data from plots that had living trees when fire was applied. -->
-
-``` r
-## Individual trees repeated for data from each temperature probe height
-model_data <- read_csv("data/tree_drought_inv_fire.csv")
-```
-
-    ## 
-    ## ── Column specification ────────────────────────────────────────────────────────
-    ## cols(
-    ##   .default = col_double(),
-    ##   tree_id = col_character(),
-    ##   Treatment = col_character(),
-    ##   veg_trt = col_character(),
-    ##   water_trt = col_character(),
-    ##   probe_ht = col_character()
-    ## )
-    ## ℹ Use `spec()` for the full column specifications.
-
-``` r
-model_data <- model_data %>% 
-  mutate(Treatment = factor(Treatment, levels = c("Reference", "Drought","Invasion","Drought + Invasion")),
-         veg_trt = factor(veg_trt, levels = c("Reference", "Invasion")),
-         water_trt = factor(water_trt, levels = c("Reference", "Drought")),
-         surv = ifelse(survival == 0, "Dead","Alive"),
-         trt_surv = paste(Treatment, surv))
-
-## Split data to each probe height
-dat0cm <- droplevels(filter(model_data, probe_ht=="0cm"))
-dat25cm <- droplevels(filter(model_data, probe_ht=="25cm"))
-dat50cm <- droplevels(filter(model_data, probe_ht=="50cm"))
-```
-
-``` r
-## Plot-level data for values at each temperature probe height
-plots_data <- model_data %>% 
-  filter(Plot %in% unique(dat25cm$Plot), !duplicated(avg_max_tempC)) %>% 
-  select(Plot, Treatment, veg_trt, water_trt, probe_ht, avg_max_tempC:fuels_kg)
-## 32 unique plots, temperature values from 3 probe height levels
-# n_distinct(dat25cm$Plot)
-
-## Filter data to single probe height so no repeats in plot-level values.
-fuels_data <- plots_data %>% 
-  filter(probe_ht=="25cm") %>% 
-  mutate(trt = factor(Treatment, labels = short_lab))
-```
-
-``` r
-## Figure 1A
-floads_means_se <- ggplot(fuels_data, aes(trt, fuels_kg)) +
-   
-  geom_point(aes(fill = Treatment, shape = Treatment), 
-             position = position_jitterdodge(dodge.width = .75), 
-             alpha = 1, size = 1, show.legend = T) +
-   
-  stat_summary(fun.data = "mean_se", aes(fill = Treatment, shape = Treatment), 
-               alpha = 1, show.legend = F, size = .5) +
-  
-  scale_y_continuous(limits = c(NA,2)) +
-  
-  treatment_color +
-  treatment_shape +
-  treatment_fill +
-
-  guides(fill = guide_legend(override.aes=list(size = 2, alpha = 1, color = "black"))) +
-  
-  theme_classic() +
-  def_theme +
-  xlab("") +
-  ylab(expression(paste("Fuel load (kg ", {m}^-2, ")"), sep = "")) +
-  theme(
-    legend.position = c(.28, .89),
-        legend.margin = margin(-8,-1,-8,-1),
-        legend.key.height = unit(1, "line"),
-    legend.key.width = unit(1, "mm"),
-        axis.text = element_text(size = 10),
-    axis.text.x = element_text(angle = 45, hjust = 1), 
-        axis.title = element_text(size = 12),
-        legend.text = element_text(size = 8),
-    plot.margin = margin(9,1,-9,0)
-        )
-```
-
-``` r
-fuels_data %>% group_by(Treatment) %>% 
-  summarise(`Avg. Fuels (kg)` = mean(fuels_kg),
-            `SD Fuels (kg)` = sd(fuels_kg),
-            n=length(Treatment))
-```
-
-# Fuel load model
-
-``` r
-## Fit model
-fuels_model <- lm(fuels_kg ~ Treatment, data = fuels_data)
-
-## ANOVA showing that Treatment affects fuel load
-# car::Anova(fuels_model)
-
-## Summary of model fit
-# summary(fuels_model)
-
-## Model diagnostic plots
-# plot(fuels_model)
-# shapiro.test(residuals(fuels_model))# not exactly normality but model is relatively robust to this issue
-# kruskal.test(fuels_kg ~ Treatment, data = fuels_data)# non-parametric test
-# car::leveneTest(fuels_kg ~ Treatment, data = fuels_data)# homogeneity of var: good
-```
-
+<!-- # Fuel load model -->
 <!-- $$
 \operatorname{fuels\_kg} = \alpha + \beta_{1}(\operatorname{Treatment}_{\operatorname{Drought}}) + \beta_{2}(\operatorname{Treatment}_{\operatorname{Invasion}}) + \beta_{3}(\operatorname{Treatment}_{\operatorname{Drought\ +\ Invasion}}) + \epsilon
 $$
  -->
-
-# Flame height model
-
-``` r
-flame_ht_Treatment <- lm(avg_flameht_cm ~ fuels_kg + Treatment, data = fuels_data)
-# shapiro.test(residuals(flame_ht_Treatment))# normality: good
-# car::leveneTest(fuels_kg ~ Treatment, data = fuels_data)# homogeneity of var: good
-
-## Only invasion (Invasion, Invasion + Drought) strongly influenced flame height
-
-## Fit simpler model using dichotomous veg treatment: invasion vs. no invasion
-flame_ht_mod <- lm(avg_flameht_cm ~ fuels_kg + veg_trt, data = fuels_data)
-# shapiro.test(residuals(flame_ht_mod))# normality: good
-# car::leveneTest(fuels_kg ~ veg_trt, data = fuels_data)# homogeneity of var: good
-```
-
+<!-- # Flame height model -->
 <!-- $$
 \operatorname{avg\_flameht\_cm} = \alpha + \beta_{1}(\operatorname{fuels\_kg}) + \beta_{2}(\operatorname{Treatment}_{\operatorname{Drought}}) + \beta_{3}(\operatorname{Treatment}_{\operatorname{Invasion}}) + \beta_{4}(\operatorname{Treatment}_{\operatorname{Drought\ +\ Invasion}}) + \epsilon
 $$
  -->
-
-``` r
-fht_mod_pred <- sjPlot::plot_model(flame_ht_mod, type = "pred", terms = c("fuels_kg","veg_trt"))
-  
-fht_fl_fig <- ggplot() +
-  geom_ribbon(data = fht_mod_pred$data %>% filter(group == "Reference"),
-              aes(x = x, ymin = conf.low, ymax = conf.high), alpha = .2, fill = "deepskyblue", show.legend = FALSE) +
-  geom_ribbon(data = fht_mod_pred$data %>% filter(group == "Invasion"),
-              aes(x = x, ymin = conf.low, ymax = conf.high), alpha = .2, fill = "red", show.legend = FALSE) +
-  # 
-  geom_line(data = fht_mod_pred$data %>% filter(group == "Reference"),
-            aes(x = x, y = predicted), show.legend = FALSE, color = "deepskyblue") +
-  geom_line(data = fht_mod_pred$data %>% filter(group == "Invasion"),
-            aes(x = x, y = predicted), show.legend = FALSE, color = "red") +
-
-  geom_point(data = fuels_data,
-             aes(x = fuels_kg, y = avg_flameht_cm,
-                 fill = Treatment, shape = Treatment), alpha = 1, size =  1) +
-  
-  treatment_shape +
-  treatment_fill +
-  guides(fill = guide_legend(override.aes=list(size = 2, alpha = 1))) +
-  
-  scale_x_continuous(limits = c(NA, 2)) +
-  scale_y_continuous(expand = c(.01, 0)) +
-  theme_classic() +
-  def_theme +
-  theme(legend.position = "none",
-        legend.background = element_blank(),
-        legend.margin = margin(-5,2.5,2.5,2.5),
-        ) +
-  xlab(expression(paste("Fuel load (kg ", {m}^-2, ")"), sep = "")) +
-  ylab("Flame height (cm)") +
-  NULL
-# fht_fl_fig
-```
-
-# Maximum temperature and heating duration models
-
-``` r
-## Ground level temperatures
-maxtemp0cm <- lm(avg_max_tempC ~ fuels_kg + veg_trt, data = filter(plots_data, probe_ht == "0cm"))
-# sjPlot::plot_model(maxtemp0cm, type = "diag")# good
-maxt_0mod_summary <- summary(maxtemp0cm)
-
-## 25cm temperatures
-maxtemp25cm <- lm(avg_max_tempC ~ fuels_kg + veg_trt, data = filter(plots_data, probe_ht == "25cm"))
-# sjPlot::plot_model(maxtemp25cm, type = "diag")# good
-maxt_25mod_summary <- summary(maxtemp25cm)
-
-## 50 cm temperatures
-maxtemp50cm <- lm(avg_max_tempC ~ fuels_kg + veg_trt, data = filter(plots_data, probe_ht == "50cm"))
-# sjPlot::plot_model(maxtemp50cm, type = "diag")# good
-maxt_50mod_summary <- summary(maxtemp50cm)
-```
-
-``` r
-## Ground level heating duration
-sabv100_0cm <- lm(avg_s_abv_100 ~ fuels_kg + veg_trt + avg_fuel_ht_cm, data = filter(plots_data, probe_ht == "0cm"))
-# sjPlot::plot_model(sabv100_0cm, type = "diag")
-# summary(sabv100_0cm)
-
-## 25 cm heating duration
-sabv100_25cm <- lm(avg_s_abv_100 ~ fuels_kg + veg_trt + avg_fuel_ht_cm, data = filter(plots_data, probe_ht == "25cm"))
-# sjPlot::plot_model(sabv100_25cm, type = "diag")
-# summary(sabv100_25cm)
-
-## 50 cm heating duration
-sabv100_50cm <- lm(avg_s_abv_100 ~ fuels_kg + veg_trt + avg_fuel_ht_cm, data = filter(plots_data, probe_ht == "50cm"))
-# sjPlot::plot_model(sabv100_50cm, type = "diag")
-# summary(sabv100_50cm)
-
-## Diagnostic plots look okay for the models. There is some minor heteroscedasticity in residuals, but I don't think it is affecting the model inference or estimates dramatically.
-```
-
-``` r
-## Prediction data from maximum temperature models ####
-maxtemp_pred_data <- rbind(
-  ggeffects::ggpredict(maxtemp0cm, terms = c("fuels_kg","veg_trt")) %>% 
-    mutate(location = "0 cm"),
-  ggeffects::ggpredict(maxtemp25cm, terms = c("fuels_kg","veg_trt")) %>% 
-    mutate(location = "25 cm"),
-  ggeffects::ggpredict(maxtemp50cm, terms = c("fuels_kg","veg_trt")) %>% 
-    mutate(location = "50 cm")
-) %>% 
-  mutate(location = factor(location, levels = c("50 cm","25 cm", "0 cm")))
-
-
-## Figure 1C - maximum temperature at 25 cm vs. fuel load ####
-max_temp_pred_fig <- ggplot(maxtemp_pred_data %>% 
-                               filter(location == "25 cm")) +
-  geom_ribbon(data = . %>% filter(group == "Reference"), 
-              aes(x = x, ymin = conf.low, ymax = conf.high), fill = "deepskyblue",
-              alpha = .2, show.legend = FALSE) +
-   
-   geom_ribbon(data = . %>% filter(group=="Invasion"), 
-              aes(x = x, ymin = conf.low, ymax = conf.high), fill = "red",
-              alpha = .2, show.legend = FALSE) +
-   
-  geom_line(data = . %>% filter(group == "Reference"), aes(x = x, y = predicted), color = "deepskyblue", show.legend = FALSE, size = .75) +
-  geom_line(data = . %>% filter(group == "Invasion"), aes(x = x, y = predicted), color = "red", show.legend = FALSE, size = .75) +
-  
-  geom_point(data = plots_data, 
-             aes(x = fuels_kg, y = avg_max_tempC, 
-                 fill = Treatment, shape = Treatment), 
-             alpha = 1, size = 1) +
-  
-  scale_x_continuous(limits = c(NA, 2)) +
-  scale_y_continuous(limits = c(0, NA), expand = c(.01,0)) +
-  
-  treatment_fill +
-  treatment_shape +
-  guides(fill = guide_legend(override.aes=list(size = 2, alpha = 1))) +
-
-  xlab(expression(paste("Fuel load (kg ", {m}^-2, ")"), sep = "")) +
-  ylab("Maximum temperature (ºC)") +
-  theme_classic() +
-  def_theme +
-  theme(
-    legend.position = "none",
-    legend.direction = "vertical",
-    legend.background = element_blank(),
-    strip.background = element_blank()
-        ) +
-  NULL
-
-## Figure S1A - maximum temperature at each height vs. fuel load #### 
-max_temp_pred_supp_fig <- ggplot(maxtemp_pred_data) +
-  geom_ribbon(data = . %>% filter(group == "Reference"), 
-              aes(x = x, ymin = conf.low, ymax = conf.high), fill = "deepskyblue",
-              alpha = .2, show.legend = FALSE) +
-   
-   geom_ribbon(data = . %>% filter(group=="Invasion"), 
-              aes(x = x, ymin = conf.low, ymax = conf.high), fill = "red",
-              alpha = .2, show.legend = FALSE) +
-   
-  geom_line(data = . %>% filter(group == "Reference"), aes(x = x, y = predicted), color = "deepskyblue", show.legend = FALSE, size = .75) +
-  geom_line(data = . %>% filter(group == "Invasion"), aes(x = x, y = predicted), color = "red", show.legend = FALSE, size = .75) +
-  
-  geom_point(data = plots_data, 
-             aes(x = fuels_kg, y = avg_max_tempC, 
-                 fill = Treatment, shape = Treatment), 
-             alpha = 1, size = 1) +
-  
-  scale_x_continuous(limits = c(NA, 2)) +
-  scale_y_continuous(limits = c(0, NA), expand = c(.01,0)) +
-  treatment_fill +
-  treatment_shape +
-  guides(fill = guide_legend(override.aes=list(size = 2, alpha = 1))) +
-   
-  facet_grid(location~.) +
-  
-  xlab(expression(paste("Fuel load (kg ", {m}^-2, ")"), sep = "")) +
-  ylab("Maximum temperature (ºC)") +
-  theme_bw() +
-  
-  def_theme +
-  theme(
-    legend.position = "none",
-    legend.direction = "vertical",
-    legend.background = element_blank(),
-    strip.background = element_blank()
-        ) +
-  NULL
-
-
-## Heating duration prediction data ####
-## Based on average fuel height of 31.85 cm
-sabv_pred_data <- rbind(
-  ggeffects::ggpredict(sabv100_0cm, terms = c("fuels_kg","veg_trt")) %>% 
-    mutate(location = "0 cm"),
-  ggeffects::ggpredict(sabv100_25cm, terms = c("fuels_kg","veg_trt")) %>% 
-    mutate(location = "25 cm"),
-  ggeffects::ggpredict(sabv100_50cm, terms = c("fuels_kg","veg_trt")) %>% 
-    mutate(location = "50 cm")
-) %>% 
-  mutate(location = factor(location, levels = c("50 cm","25 cm", "0 cm")))
-
-
-## Figure 1D - heating duration at 25 cm vs. fuel load ####
-sabv_100_pred_fig <- ggplot(sabv_pred_data %>% 
-                               filter(location == "25 cm")) +
-  ## Predicted 95% confidence intervals
-  geom_ribbon(data = . %>% filter(group == "Reference"), 
-              aes(x = x, ymin = conf.low, ymax = conf.high), fill = "deepskyblue", alpha = .2, show.legend = FALSE) +
-   geom_ribbon(data = . %>% filter(group == "Invasion"), 
-              aes(x = x, ymin = conf.low, ymax = conf.high), fill = "red",
-              alpha = .2, show.legend = FALSE) +
-  
-  ## Predicted mean lines
-  geom_line(data = . %>% filter(group == "Reference"), aes(x = x, y = predicted), color = "deepskyblue", show.legend = FALSE, size = .75) +
-  geom_line(data = . %>% filter(group == "Invasion"), aes(x = x, y = predicted), color = "red", show.legend = FALSE, size = .75) +
-  
-  ## Raw data points
-  geom_point(data = fuels_data, aes(x = fuels_kg, y = avg_s_abv_100, 
-                 fill = Treatment, shape = Treatment), 
-             alpha = 1, size = 1) +
-  
-  scale_x_continuous(limits = c(NA, 2)) +
-  scale_y_continuous(limits = c(0, NA), expand = c(0,4)) +
-
-  treatment_shape + 
-  treatment_fill +
-  guides(fill = guide_legend(override.aes=list(size = 2, alpha = 1))) +
-  
-  xlab(expression(paste("Fuel load (kg ", {m}^-2, ")"), sep = "")) +
-  ylab("Heating duration (s)") +
-  theme_classic() +
-  def_theme +
-  theme(
-    legend.position = "none",
-    legend.direction = "vertical",
-    legend.margin = margin(-5,2,1,2),
-    strip.background = element_blank(),
-        ) +
-  NULL
-
-
-## Figure S1B - heating duration at each height vs. fuel load ####
-sabv_100_pred_supp_fig <- ggplot(sabv_pred_data) +
-  geom_ribbon(data = . %>% filter(group == "Reference"), 
-              aes(x = x, ymin = conf.low, ymax = conf.high), fill = "deepskyblue", alpha = .2, show.legend = FALSE) +
-   geom_ribbon(data = . %>% filter(group == "Invasion"), 
-              aes(x = x, ymin = conf.low, ymax = conf.high), fill = "red",
-              alpha = .2, show.legend = FALSE) +
-   
-  geom_line(data = . %>% filter(group == "Reference"), aes(x = x, y = predicted), color = "deepskyblue", show.legend = FALSE, size = .75) +
-  geom_line(data = . %>% filter(group == "Invasion"), aes(x = x, y = predicted), color = "red", show.legend = FALSE, size = .75) +
-  
-  geom_point(data = fuels_data, 
-             aes(x = fuels_kg, y = avg_s_abv_100, 
-                 fill = Treatment, shape = Treatment), 
-             alpha = 1, size = 2) +
-  
-  scale_x_continuous(limits = c(NA, 2)) +
-  scale_y_continuous(limits = c(0, NA), expand = c(0,4)) +
-
-  treatment_shape + 
-  treatment_fill +
-  guides(fill = guide_legend(override.aes=list(size = 2, alpha = 1))) +
-  
-  facet_grid(location~.) +
-  
-  xlab(expression(paste("Fuel load (kg ", {m}^-2, ")"), sep = "")) +
-  ylab("Heating duration (s)") +
-  theme_bw() +
-  
-  def_theme +
-  theme(
-    legend.position = c(.75,.95),
-    legend.background = element_blank(),
-    legend.direction = "vertical",
-    legend.margin = margin(-5,2,1,2),
-    strip.background = element_blank(),
-    legend.key = element_blank()
-        ) +
-  NULL
-```
-
-``` r
-library(patchwork)
-
-heat_fig <- (max_temp_pred_fig + xlab("") ) |
-  (sabv_100_pred_fig + ylab("Heating duration (s)") + xlab("") )
-
-heat_fig <- heat_fig +
-  xlab(expression(paste("Fuel load (kg ", {m}^-2, ")"), sep = "")) +
-  theme(axis.title.x = element_text(hjust = -.75))
-```
+<!-- $$
+\operatorname{avg\_flameht\_cm} = \alpha + \beta_{1}(\operatorname{fuels\_kg}) + \beta_{2}(\operatorname{veg\_trt}_{\operatorname{Invasion}}) + \epsilon
+$$
+ -->
+<!-- # Maximum temperature and heating duration models -->
 
 # Figure 1. Treatment effects on fire
 
-``` r
-pw <- floads_means_se + ggtitle("") +
-          # scale_y_continuous(limits = c())
-          theme(legend.position = c(.38, .89),
-                legend.key.height = unit(.6, "line"),
-                legend.key.width = unit(1, "mm")) +
-          
-          fht_fl_fig + scale_y_continuous(expand = c(0,5)) + xlab ("") + ggtitle("") +
-          
-          max_temp_pred_fig + ggtitle("") +
-          theme(axis.title.x = element_text(vjust = 10)) +
-          sabv_100_pred_fig + xlab("") + ggtitle("")
-```
-
-    ## Scale for 'y' is already present. Adding another scale for 'y', which will
-    ## replace the existing scale.
-
-``` r
-figure1 <- pw +
-  plot_layout(ncol = 4, nrow = 1) +
-  plot_annotation(tag_levels = 'A') &
-  theme(axis.text = element_text(size = 9),
-        axis.title = element_text(size = 11),
-        legend.text = element_text(size = 9),
-        plot.tag = element_text(face = "bold"),
-        plot.tag.position = c(0.02, .95),
-        plot.margin = margin(c(0,2,0,2))
-        )
-figure1
-```
-
 ![](drought_invasion_fire_files/figure-gfm/Fig1%20treatment%20effects%20on%20fire-1.png)<!-- -->
-
-``` r
-# ggsave("figures/Fig1_top_1200dpi.pdf", figure1, width = 9, height = 3, dpi = 1200)
-## Panels E and F added and figure resized externally using Preview on Mac
-```
 
 Effects of drought, invasion, and drought + invasion on fuel loads and
 fire behavior. Invasion produced greater fuel loads, which affected
@@ -676,34 +106,7 @@ Red/dark = invasion, blue/light = no invasion. Point shapes indicate
 treatment: square = Reference, triangle = Drought, circle = Invasion,
 diamond = Drought + Invasion (Dro + Inv).
 
-# Global change model
-
-``` r
-library(lme4)
-library(sjPlot)
-library(MuMIn)
-library(DHARMa)
-
-survival_ht_trt <- glmer(
-  survival ~ tree_height_cm + Treatment + (1|Plot),
-  family = binomial(link = "logit"), data = dat25cm,
-  glmerControl(optimizer = "Nelder_Mead", optCtrl = list(maxfun=1000000))
-  )
-```
-
-    ## Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: large eigenvalue ratio
-    ##  - Rescale variables?
-
-``` r
-## check model diagnostics
-simResids <- simulateResiduals(survival_ht_trt)
-# plot(simResids)
-
-# summary(survival_ht_trt)
-# AICc(survival_ht_trt)# 67.1
-# r.squaredGLMM(survival_ht_trt)
-```
-
+<!-- # Global change model -->
 <!-- $$
 \begin{aligned}
   \operatorname{survival}_{i}  &\sim \operatorname{Binomial}(n = 1, \operatorname{prob}_{\operatorname{survival} = 1} = \widehat{P}) \\
@@ -713,348 +116,20 @@ simResids <- simulateResiduals(survival_ht_trt)
 \end{aligned}
 $$
  -->
-
-``` r
-ht_trt_pred_plot <- plot_model(survival_ht_trt, type = "pred", pred.type = "fe", show.data = F, terms = c("tree_height_cm [n=10]","Treatment"), show.legend = F)
-# ht_trt_pred_plot$data <- ht_trt_pred_plot$data %>% filter(group!="Drought")
-
-
-glob_drivers_mod <- ggplot(ht_trt_pred_plot$data) +
-  ylab("Survival probability (%)") +
-  xlab("Tree height (cm)") +
-  
-  geom_ribbon(data = . %>% filter(group == "Reference"),
-              aes(x = x, ymin = conf.low, ymax = conf.high), 
-              fill = "deepskyblue",
-              alpha = .2, show.legend = FALSE) +
-  geom_ribbon(data = . %>% filter(group == "Invasion"), 
-              aes(x = x, ymin = conf.low, ymax = conf.high), 
-              fill = "red", alpha = .2, show.legend = FALSE) +
-  geom_ribbon(data = . %>% filter(group == "Drought + Invasion"), 
-              aes(x = x, ymin = conf.low, ymax = conf.high), 
-              fill = "red", alpha = .2, show.legend = FALSE) +
-  
-  geom_point(data = dat25cm,
-             aes(x = tree_height_cm, y = survival, shape = Treatment, fill = Treatment),
-             alpha = .7, size = 2, show.legend = FALSE,
-             position = position_jitter(height = .02, width = 0)
-             ) +
-  
-  geom_line(aes(x = x, y = predicted, color = group, linetype = group), 
-            show.legend = TRUE, size = 1) +
-
-  scale_y_continuous(labels = c("0","25","50","75","100"),
-                     expand = c(0, 0.01)) +
-  scale_x_continuous(expand = c(.035, 0)) +
-  
-  guides(fill = guide_legend(override.aes = list(alpha = 0), label = FALSE)) +
-  
-  treatment_fill +
-  treatment_shape +
-  treatment_color +
-  treatment_lines +
-  theme_classic() +
-  pred_plot_theme +
-  theme(legend.position = c(.75, .2),
-        legend.key.width = unit(.5, "inch"),
-        legend.key.height = unit(.8, "line"))
-
-# ggsave("figures/surv_ht_trt_pred_fig2A.png", glob_drivers_mod,
-       # dpi = 1200, width = 3.42, height = 3.42)
-```
-
-# Mechanistic model
-
-``` r
-## Model using unscaled predictor variables, including max temp
-## Excludes global drivers (treatment)
-
-mech_model <- glmer(
-  survival ~ tree_height_cm + avg_flameht_cm + avg_max_tempC + avg_s_abv_100 + (1|Plot), 
-  family = binomial(link = "logit"), data = dat25cm,
-  glmerControl(optimizer = "Nelder_Mead", optCtrl = list(maxfun=1000000))
-  )
-```
-
-    ## Warning in checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv, : Model is nearly unidentifiable: very large eigenvalue
-    ##  - Rescale variables?;Model is nearly unidentifiable: large eigenvalue ratio
-    ##  - Rescale variables?
-
-``` r
-# plot(DHARMa::simulateResiduals(mech_model))
-## Decent-looking residual plots
-
-# summary(mech_model)
-# r.squaredGLMM(mech_model)
-```
-
-``` r
-## Predictions for each variable with others held at mean values
-# avg_flameht_cm =  94.31
-# avg_max_tempC = 433.92
-# avg_s_abv_100 = 104.81
-# tree_height_cm = 339.94
-
-ht_mech_pred_plot <- plot_model(mech_model, type = "pred", pred.type = "fe", show.data = F, terms = c("tree_height_cm [n=10]"))
-ht_mech_pred_plot_data <- ht_mech_pred_plot$data
-
-fht_pred <- plot_model(mech_model, type = "pred", pred.type = "fe", show.data = F, terms = c("avg_flameht_cm"))
-```
-
-    ## Data were 'prettified'. Consider using `terms="avg_flameht_cm [all]"` to get smooth plots.
-
-``` r
-max_temp_mech_pred <- plot_model(mech_model, type = "pred", pred.type = "fe", show.data = F, terms = "avg_max_tempC")
-```
-
-    ## Data were 'prettified'. Consider using `terms="avg_max_tempC [all]"` to get smooth plots.
-
-``` r
-surv_sabv100_pred <- plot_model(mech_model, type = "pred", pred.type = "fe", show.data = F, terms = "avg_s_abv_100")
-```
-
-    ## Data were 'prettified'. Consider using `terms="avg_s_abv_100 [all]"` to get smooth plots.
-
-``` r
-relabel_vals <- c("0","25","50","75","100")
-
-## Figure 2E - Marginal effect of tree height ####
-ht_mech_pred_fig <- ggplot(ht_mech_pred_plot_data) +
-  scale_y_continuous(labels = relabel_vals, expand = c(0, .015)) +
-  geom_ribbon(aes(x = x, ymin = conf.low, ymax = conf.high),
-              alpha = .2) +
-  geom_line(aes(x, predicted)) +
-
-  geom_point(data = dat25cm,
-             aes(x = tree_height_cm, y = survival,
-                 shape = Treatment, fill = Treatment),
-             size = 2, alpha = .7,
-             position = position_jitterdodge(jitter.height = .02)) +
-  
-  treatment_color +
-  treatment_fill +
-  treatment_shape +
-  guides(fill = guide_legend(override.aes = aes(alpha = 1, size = 2))) +
-  
-  ylab("Survival probability (%)") +
-  xlab("Tree height (cm)") +
-  ggtitle("") +
-  theme_classic() +
-  pred_plot_theme +
-  theme(legend.position = c(.8,.3)) +
-  NULL
-# ggsave("figures/surv_treeht_mech_model_pred.png", ht_mech_pred_fig, width = 3.42, height = 3.42, dpi = 1200)
-
-
-## Figure 2E - Marginal effect of flame height
-fh_mech_pred_fig <- fht_pred +
-  
-  geom_point(data = dat25cm,
-             aes(x = avg_flameht_cm, y = survival, shape = Treatment, 
-                 fill = Treatment),
-             alpha = .7, size = 2, show.legend = FALSE,
-             position = position_jitter(height = .02, width = 0)) +
-
-  scale_y_continuous(labels = relabel_vals, expand = c(0, .015)) +
-  scale_x_continuous(expand = c(0,3), limits = c(0, 290),
-                     breaks = seq(0, 300, 50), labels = seq(0, 300, 50)) +
-  
-  trt_surv_color + trt_surv_fill + trt_surv_shape +
-  
-  ylab("Survival probability (%)") +
-  xlab("Flame height (cm)") +
-  ggtitle("") +
-  theme_classic() +
-  pred_plot_theme +
-  NULL
-```
-
-    ## Scale for 'y' is already present. Adding another scale for 'y', which will
-    ## replace the existing scale.
-
-    ## Scale for 'colour' is already present. Adding another scale for 'colour',
-    ## which will replace the existing scale.
-
-``` r
-# ggsave("figures/surv_flameht_mech_model_pred.png", fh_mech_pred_fig, width = 3.42, height = 3.42, dpi = 1200)
-
-
-## Fig S2A - Marginal effect of maximum temperature ####
-max_temp_mech_pred_fig <- ggplot(max_temp_mech_pred$data) +
-  scale_y_continuous(labels = relabel_vals, expand = c(0, .015)) +
-  geom_ribbon(aes(x = x, ymin = conf.low, ymax = conf.high),
-              alpha = .2) +
-  geom_line(aes(x, predicted)) +
-  geom_point(data = dat25cm,
-             aes(x = avg_max_tempC, y = survival, shape = Treatment, fill = Treatment),
-             alpha = .7, size = 2, show.legend = FALSE,
-             position = position_jitter(height = .02, width = 0)) +
-  
-  treatment_color +
-  treatment_fill +
-  treatment_shape +
-  
-  guides(fill = guide_legend(override.aes = aes(alpha = 1, size = 2))) +
-  
-  ylab("Survival probability (%)") +
-  xlab("Maximum temperature (ºC)") +
-  ggtitle("") +
-  theme_classic() +
-  pred_plot_theme +
-  NULL
-
-
-## Fig S2B - Marginal effect of heating duration ####
-surv_sabv100_pred_fig <- surv_sabv100_pred +
-  geom_point(data = dat25cm, 
-             aes(x=avg_s_abv_100, y=survival, shape = Treatment, 
-                 fill = Treatment), 
-             size = 2, alpha = .7,
-             position = position_jitter(height = .02)) +
-  
-  scale_y_continuous(labels = relabel_vals) +
-  
-  treatment_color +
-  treatment_shape +
-  treatment_fill +
-  
-  ylab("Survival probability (%)") +
-  xlab("Seconds above 100ºC") +
-  ggtitle("") +
-  theme_classic() +
-  pred_plot_theme +
-  NULL
-```
-
-    ## Scale for 'y' is already present. Adding another scale for 'y', which will
-    ## replace the existing scale.
-    ## Scale for 'colour' is already present. Adding another scale for 'colour',
-    ## which will replace the existing scale.
-
-``` r
-df2 <- dat25cm %>% 
-  filter(survival == "Dead") %>% 
-  group_by(trt_surv) %>% 
-  summarise(ymean = mean(tree_height_cm),
-            ysd = sd(tree_height_cm),
-            xmean = mean(avg_flameht_cm),
-            xsd = sd(avg_flameht_cm))
-df3 <- dat25cm %>% 
-  filter(surv == "Alive") %>% 
-  group_by(trt_surv) %>% 
-  summarise(ymean = mean(tree_height_cm),
-            ysd = sd(tree_height_cm),
-            xmean = mean(avg_flameht_cm),
-            xsd = sd(avg_flameht_cm))
-
-## Figure 2A ####
-tht_fht_mort_figA <- ggplot() +
-  geom_point(data = dat25cm,
-             aes(x = avg_flameht_cm, y = tree_height_cm,
-                 fill = trt_surv, shape = trt_surv, color = trt_surv),
-             size = 2.5, alpha = .5) +
-  geom_errorbar(data = df3, aes(x = xmean, ymin = ymean - ysd, ymax = ymean + ysd, color = trt_surv), width = 0, color = "black") +
-  geom_errorbarh(data = df3, aes(y = ymean, xmin = xmean - xsd, xmax = xmean + xsd, color = trt_surv), height = 0, color = "black") +
-  geom_point(data = df3, aes(x = xmean, y = ymean, fill = trt_surv, shape = trt_surv), 
-             size = 4) +
-  
-  geom_errorbar(data = df2, aes(x = xmean, ymin = ymean - ysd, ymax = ymean + ysd, color = trt_surv), width = 0, color = "black") +
-  geom_errorbarh(data = df2, aes(y = ymean, xmin = xmean - xsd, xmax = xmean + xsd, color = trt_surv), height = 0, color = "black") +
-  geom_point(data = df2, aes(x = xmean, y = ymean, color = trt_surv, fill = trt_surv, shape = trt_surv), size = 4) +
-  
-  geom_text(aes(x = 200, y = 20, label = "open = dead")) +
-  
-  trt_surv_color + trt_surv_fill + trt_surv_shape +
-  
-  scale_y_continuous(expand = c(0,18)) +
-  scale_x_continuous(expand = c(0,3), limits = c(0, 290),
-                     breaks = seq(0, 300, 50), labels = seq(0, 300, 50)) +
-
-  xlab("Flame height (cm)") + 
-  ylab("Tree height (cm)") +
-  theme_classic() +
-  pred_plot_theme +
-  theme(legend.position = "none",
-        plot.background = element_blank()) +
-  NULL
-
-
-## Figure 2B ####
-mortality <- dat25cm %>% 
-  mutate(trt = factor(Treatment, labels = short_lab)) %>% 
-  group_by(trt) %>% 
-  summarise(pct_mortality = 100 * (1 - (sum(survival)/length(tree_id)))) %>% 
-  ungroup(.)
-
-tht_fht_mort_figB <- ggplot(mortality, aes(trt, pct_mortality)) +
-  geom_point(aes(shape = trt, color = trt), size = 2.5) +
-  trt_shp +
-  trt_col +
-  scale_y_continuous(position = "left", limits = c(0, 50), 
-                     expand = c(0, 1)) +
-  scale_x_discrete(guide = guide_axis(angle = 50), expand = c(0, 0.3)) +
-  ylab("Mortality (%)") +
-  xlab("") +
-  theme_gray() +
-  pred_plot_theme +
-  theme(legend.position = "none",
-        panel.border = element_rect(fill = NA, color = "black"),
-        axis.text.x = element_text()
-        ) +
-  NULL
-
-th_fh_mort_fig <- tht_fht_mort_figA + 
-  theme(axis.title.x = element_text(vjust = 13)) + 
-  tht_fht_mort_figB +
-  plot_layout(widths = c(7,3))
-# th_fh_mort_fig
-```
+<!-- # Mechanistic model -->
+<!-- $$
+\begin{aligned}
+  \operatorname{survival}_{i}  &\sim \operatorname{Binomial}(n = 1, \operatorname{prob}_{\operatorname{survival} = 1} = \widehat{P}) \\
+    \log\left[\frac{\hat{P}}{1 - \hat{P}} \right] &=\alpha_{j[i]} + \beta_{1}(\operatorname{tree\_height\_cm}) \\
+    \alpha_{j}  &\sim N \left(\gamma_{0}^{\alpha} + \gamma_{1}^{\alpha}(\operatorname{avg\_flameht\_cm}) + \gamma_{2}^{\alpha}(\operatorname{avg\_max\_tempC}) + \gamma_{3}^{\alpha}(\operatorname{avg\_s\_abv\_100}), \sigma^2_{\alpha_{j}} \right)
+    \text{, for Plot j = 1,} \dots \text{,J}
+\end{aligned}
+$$
+ -->
 
 # Figure 2. Global change drivers and mechanisms
 
-``` r
-# glob_drivers_mod
-# th_fh_mort_fig
-# ht_mech_pred_fig
-# fh_mech_pred_fig
-# max_temp_mech_pred_fig
-# surv_sabv100_pred_fig
-
-gd <- glob_drivers_mod +
-  theme(legend.margin = margin(c(0,0,0,0)),
-        legend.background = element_blank(),
-        legend.position = c(.745, .02),
-        axis.title.x = element_text(vjust = 13)
-        )
-
-gdmech_fig <- 
-  th_fh_mort_fig -
-  gd + theme(legend.position = c(.7, .05),
-             axis.title.y = element_text(vjust = -1)) +
-  fh_mech_pred_fig + theme(axis.title.y = element_text(vjust = -1)) +
-  ht_mech_pred_fig + theme(legend.position = c(.7, .25),
-                           axis.title.y = element_text(vjust = -1)) #+ 
-  # max_temp_mech_pred_fig + surv_sabv100_pred_fig + ylab("")
-  
-figure2 <- gdmech_fig + plot_layout(ncol = 2) +
-  plot_annotation(tag_levels = 'A') &
-  theme(axis.title = element_text(size = 16),
-        axis.text = element_text(size = 12),
-        legend.text = element_text(size = 12), 
-        plot.tag = element_text(face = "bold"),
-        plot.tag.position = c(.02,.99),
-        plot.margin = margin(t = 2, r = 5, b = 1, l = 1)
-        )
-figure2
-```
-
 ![](drought_invasion_fire_files/figure-gfm/Figure%202%20global%20drivers%20and%20mechanisms-1.png)<!-- -->
-
-``` r
-# ggsave("figures/global_drivers_mech_fig.png", figure2, width = 8, height = 8, dpi = 150)
-# ggsave("figures/Fig2_global_drivers_mech_1200dpi.pdf", figure2, width = 8, height = 8, dpi = 1200)
-## Resized externally using Preview on Mac OS
-```
 
 Mechanistic effects of drought, invasion, and drought + invasion on tree
 survival following fires. (A) Trees in the drought + invasion treatment
@@ -1074,222 +149,20 @@ temperature and heating duration (but not experimental treatments).
 Predicted lines ±95% CI; points on C – E are individual trees
 (vertically jittered for visibility), shape indicates plot treatment.
 
-# Management Model
-
-``` r
-management_model <- glmer(
-  survival ~ tree_height_cm + fuels_kg*veg_trt + (1|Plot), 
-  family = binomial(link = "logit"), data = dat25cm,
-  glmerControl(optimizer = "Nelder_Mead", optCtrl = list(maxfun=1000000))
-  )
-```
-
-    ## boundary (singular) fit: see ?isSingular
-
-``` r
-# plot(simulateResiduals(management_model))
-# summary(management_model)
-# MuMIn::AICc(management_model)# 58.6
-# r.squaredGLMM(management_model)
-```
-
-``` r
-## Survival probability vs. tree height in Reference or Invasion plots
-tht_veg_drywt_pred <- plot_model(management_model, type = "pred", terms = c("tree_height_cm [n=15]","veg_trt"), pred.type = "fe")
-## Prediction for fuel load of 0.91 kg
-
-fig3A <- ggplot(data = tht_veg_drywt_pred$data) +
-  ylab("Survival probability (%)") +
-  xlab("Tree height (cm)") +
-  scale_y_continuous(labels = relabel_vals,
-                     expand = c(0, 0.02)) +
-  scale_x_continuous(expand = c(.035, 0)) +
-  
-  geom_ribbon(data = . %>% filter(group == "Reference"),
-              aes(x = x, ymin = conf.low, ymax = conf.high), 
-              fill = "deepskyblue",
-              alpha = .2, show.legend = FALSE) +
-   
-  geom_ribbon(data = . %>% filter(group=="Invasion"), 
-              aes(x = x, ymin = conf.low, ymax = conf.high), 
-              fill = "red", alpha = .2, show.legend = FALSE) +
-  
-  geom_line(data = . %>% filter(group == "Reference"), 
-            aes(x = x, y = predicted), 
-            color = "deepskyblue", show.legend = FALSE, size = .75) +
-  geom_line(data = . %>% filter(group == "Invasion"), 
-            aes(x = x, y = predicted), 
-            color = "red", show.legend = FALSE, size = .75) +
-  
-  geom_point(data = dat25cm, 
-             aes(x = tree_height_cm, y = survival, fill = Treatment, 
-                 shape = Treatment), 
-             alpha = 1, size = 2, 
-             position = position_jitterdodge(jitter.height = .02)) +
-  treatment_fill +
-  treatment_color +
-  treatment_shape +
-  guides(fill = guide_legend(override.aes=list(size = 2, alpha = 1))) +
-  theme_classic() +
-  pred_plot_theme +
-  theme(legend.position = c(.8, .3))
-```
-
-``` r
-## Survival probability vs. fuel load in Reference or Invasion plots
-fuels_veg_tht_pred <- plot_model(management_model, type = "pred", terms = c("fuels_kg [n=25]","veg_trt"), pred.type = "fe")
-
-
-drywt_veg_tht_pred <- ggplot(data = fuels_veg_tht_pred$data) +
-  scale_x_continuous(limits = c(0.35, 2.0), expand = c(0, .02)) +
-  scale_y_continuous(labels = relabel_vals, expand = c(0, 0.02)) +
-  ylab("Survival (%)") +
-  xlab("Fuel load (kg)") +
-  
-  geom_ribbon(data = . %>% filter(group == "Reference"),
-              aes(x = x, ymin = conf.low, ymax = conf.high), 
-              fill = "deepskyblue",
-              alpha = .2, show.legend = FALSE) +
-   
-  geom_ribbon(data = . %>% filter(group=="Invasion"), 
-              aes(x = x, ymin = conf.low, ymax = conf.high), 
-              fill = "red", alpha = .2, show.legend = FALSE) +
-  
-  geom_line(data = . %>% filter(group == "Reference"), 
-            aes(x = x, y = predicted), 
-            color = "deepskyblue", show.legend = FALSE, size = .75) +
-  geom_line(data = . %>% filter(group == "Invasion"), 
-            aes(x = x, y = predicted), 
-            color = "red", show.legend = FALSE, size = .75) +
-  
-  geom_point(data = dat25cm, 
-             aes(x = fuels_kg, y = survival, fill = Treatment, 
-                 shape = Treatment), 
-             alpha = 1, size = 2,
-             position = position_jitterdodge(jitter.height = .02)) +
-  treatment_fill +
-  treatment_shape +
-  guides(fill = guide_legend(override.aes=list(size = 4, alpha = 1))) +
-  theme_classic() +
-  pred_plot_theme +
-  NULL
-# plot_model(surv_unscl_drywt4, type = "pred", terms = c("drywt_kg [0.5,1.28,1.3]","veg_trt"))$data
-```
-
-``` r
-## Survival predictions for fuel loads of 0.6 kg and 1.2 kg
-surv_fuel_pred <- plot_model(
-  management_model, type = "pred", 
-  terms = c("tree_height_cm [n=20]","veg_trt","fuels_kg [.6, .9, 1.2]"), 
-  show.data = FALSE,show.legend = FALSE, pred.type = "fe"
-  )
-
-surv_fuel_pred$data$facet <- factor(
-  surv_fuel_pred$data$facet, labels = c("Fuel load: 0.6 kg", "Fuel load: 0.9 kg", "Fuel load: 1.2 kg"))
-surv_fuel_pred_data <- surv_fuel_pred$data
-
-surv_fuel_pred_fig <- ggplot(data = surv_fuel_pred_data %>% 
-                               filter(facet == "Fuel load: 0.6 kg"))
-surv_fuel_pred_figB <- ggplot(data = surv_fuel_pred_data %>% 
-                               filter(facet == "Fuel load: 1.2 kg"))
-
-surv_fuel_pred_fig <- surv_fuel_pred_fig +
-  scale_y_continuous(labels = relabel_vals, expand = c(0, 0.02)) +
-  ylab("Survival (%)") +
-  xlab("Tree height (cm)") +
-  geom_ribbon(data = . %>% filter(group == "Reference"),
-              aes(x = x, ymin = conf.low, ymax = conf.high), 
-              fill = "deepskyblue", alpha = .2, show.legend = FALSE) +
-  geom_ribbon(data = . %>% filter(group=="Invasion"), 
-              aes(x = x, ymin = conf.low, ymax = conf.high), 
-              fill = "red", alpha = .2, show.legend = FALSE) +
-  geom_line(data = . %>% filter(group == "Reference"), 
-            aes(x = x, y = predicted), 
-            color = "deepskyblue", show.legend = FALSE, size = .75) +
-  geom_line(data = . %>% filter(group == "Invasion"), 
-            aes(x = x, y = predicted), 
-            color = "red", show.legend = FALSE, size = .75) +
-  
-  facet_wrap(facets = ~facet) +
-  
-  geom_point(data = dat25cm, 
-             aes(x = tree_height_cm, y = survival, fill = Treatment, 
-                 shape = Treatment), 
-             alpha = 1, size = 2,
-             position = position_jitterdodge(jitter.height = .02)) +
-  
-  treatment_fill +
-  treatment_shape +
-  guides(fill = guide_legend(override.aes=list(size = 2, alpha = 1))) +
-  
-  theme_classic() +
-  pred_plot_theme +
-  theme(strip.background = element_blank(),
-        strip.text = element_text(size = 12),
-        ) +
-  NULL
-# surv_fuel_pred_fig
-
-surv_fuel_pred_figB <- surv_fuel_pred_figB +
-  scale_y_continuous(labels = relabel_vals, expand = c(0, 0.02)) +
-  ylab("Survival (%)") +
-  xlab("Tree height (cm)") +
-  geom_ribbon(data = . %>% filter(group == "Reference"),
-              aes(x = x, ymin = conf.low, ymax = conf.high), 
-              fill = "deepskyblue", alpha = .2, show.legend = FALSE) +
-  geom_ribbon(data = . %>% filter(group=="Invasion"), 
-              aes(x = x, ymin = conf.low, ymax = conf.high), 
-              fill = "red", alpha = .2, show.legend = FALSE) +
-  geom_line(data = . %>% filter(group == "Reference"), 
-            aes(x = x, y = predicted), 
-            color = "deepskyblue", show.legend = FALSE, size = .75) +
-  geom_line(data = . %>% filter(group == "Invasion"), 
-            aes(x = x, y = predicted), 
-            color = "red", show.legend = FALSE, size = .75) +
-  
-  facet_wrap(facets = ~facet) +
-  
-  geom_point(data = dat25cm, 
-             aes(x = tree_height_cm, y = survival, fill = Treatment, 
-                 shape = Treatment), 
-             alpha = 1, size = 2,
-             position = position_jitterdodge(jitter.height = .02)) +
-  
-  treatment_fill +
-  treatment_shape +
-  guides(fill = guide_legend(override.aes=list(size = 2, alpha = 1))) +
-  
-  theme_classic() +
-  pred_plot_theme +
-  theme(strip.background = element_blank(),
-        strip.text = element_text(size = 12),
-        )
-# surv_fuel_pred_figB
-```
+<!-- # Management Model -->
+<!-- $$
+\begin{aligned}
+  \operatorname{survival}_{i}  &\sim \operatorname{Binomial}(n = 1, \operatorname{prob}_{\operatorname{survival} = 1} = \widehat{P}) \\
+    \log\left[\frac{\hat{P}}{1 - \hat{P}} \right] &=\alpha_{j[i]} + \beta_{1}(\operatorname{tree\_height\_cm}) \\
+    \alpha_{j}  &\sim N \left(\gamma_{0}^{\alpha} + \gamma_{1}^{\alpha}(\operatorname{fuels\_kg}) + \gamma_{2}^{\alpha}(\operatorname{veg\_trt}_{\operatorname{Invasion}}) + \gamma_{3}^{\alpha}(\operatorname{fuels\_kg} \times \operatorname{veg\_trt}_{\operatorname{Invasion}}), \sigma^2_{\alpha_{j}} \right)
+    \text{, for Plot j = 1,} \dots \text{,J}
+\end{aligned}
+$$
+ -->
 
 # Figure 3. Management model predictions
 
-``` r
-p1 <- tht_veg_drywt_pred + theme(legend.position = c(.7,.3))
-p2 <- drywt_veg_tht_pred  + ylab(" ")
-p3 <- surv_fuel_pred_fig + ylab("Survival probability (%)") + xlab("")
-p4 <- surv_fuel_pred_figB + ylab(" ") + xlab("")
-
-p <- (p1|p2) / ((p3|p4) + xlab("Tree height (cm)") + 
-                  theme(axis.title.x = element_text(hjust = -1)))
-  
-figure3 <- p + plot_annotation(tag_levels = 'A') &
-  theme(plot.tag = element_text(face = "bold"))
-figure3
-```
-
-    ## Warning: position_jitterdodge requires non-overlapping x intervals
-
 ![](drought_invasion_fire_files/figure-gfm/Figure%203%20managment%20model-1.png)<!-- -->
-
-``` r
-# ggsave("figures/management_model_figure.pdf", figure3, dpi = 1200, width = 7, height = 7)
-```
 
 Management implications for effects of tree height and fuel load on tree
 survival. (A) The predicted effect of tree height (conditioned on
@@ -1305,13 +178,7 @@ Red/dark = invasion, blue/light = no invasion.
 
 # Supplemental Tables
 
-## Table S1. Treatment effects on fuel loads
-
-``` r
-broom::tidy(fuels_model) %>% 
-  rename(Term = term, Estimate = estimate, SE = std.error, `t-value` = statistic, `P-value` = p.value) %>% 
-  knitr::kable(digits = 3, caption = "Model results for treatment effects on average fuel loads relative to the Reference plots (adjusted R2 = 0.33). Note that we only included fuel load data for plots with trees in them at the time of the  fires (N = 32 plots. Reference = 10, Invasion = 6, Drought = 8, Drought + Invasion = 8).")
-```
+## Table S1 Treatment effects on fuel loads
 
 | Term                        | Estimate |    SE | t-value | P-value |
 |:----------------------------|---------:|------:|--------:|--------:|
@@ -1326,17 +193,7 @@ fuel load data for plots with trees in them at the time of the fires (N
 = 32 plots. Reference = 10, Invasion = 6, Drought = 8, Drought +
 Invasion = 8).
 
-``` r
-# tab_model(fuels_model)
-```
-
-## Table S2. Flame height model summary
-
-``` r
-broom::tidy(flame_ht_Treatment) %>% 
-  rename(Term = term, Estimate = estimate, SE = std.error, `t-value` = statistic, `P-value` = p.value) %>% 
-  knitr::kable(digits = 3, caption = "Coefficient estimates and p-values for the model of flame height affected by treatment (adjusted R2 = 0.84). Best fit lines in Fig. 1B are a simplified model of no invasion (Reference, Drought) versus invasion (Invasion, Drought + Invasion)")
-```
+## Table S2 Flame height model summary
 
 | Term                        | Estimate |     SE | t-value | P-value |
 |:----------------------------|---------:|-------:|--------:|--------:|
@@ -1351,39 +208,7 @@ affected by treatment (adjusted R2 = 0.84). Best fit lines in Fig. 1B
 are a simplified model of no invasion (Reference, Drought) versus
 invasion (Invasion, Drought + Invasion)
 
-``` r
-# tab_model(flame_ht_Treatment)
-```
-
 ## Table S3. Maximum temperature models summaries
-
-``` r
-maxt0cm_coefs <- broom::tidy(maxtemp0cm) %>% 
-  mutate(probe_ht = "0 cm") %>% 
-  select(probe_ht, everything())
-
-maxt_25cm_coefs <- broom::tidy(maxtemp25cm) %>% 
-  mutate(probe_ht = "25 cm") %>% 
-  select(probe_ht, everything())
-
-maxt_50cm_coefs <- broom::tidy(maxtemp50cm) %>% 
-  mutate(probe_ht = "50 cm") %>% 
-  select(probe_ht, everything())
-
-## Combine estimates from each model
-maxtemp_mod_coefs <- rbind(maxt_50cm_coefs, maxt_25cm_coefs, maxt0cm_coefs)
-
-## Get R2 values and combine with probe height
-maxtr2 <- c(maxt_0mod_summary$adj.r.squared, maxt_25mod_summary$adj.r.squared, maxt_50mod_summary$adj.r.squared)
-probe_ht <- c("0 cm", "25 cm", "50 cm")
-maxtemp_r2 <- as.data.frame(cbind(probe_ht, adj.r2 = round(maxtr2, digits = 2)))
-
-## Generate Table S3
-knitr::kable(left_join(maxtemp_mod_coefs, maxtemp_r2), digits = 3, 
-             caption = "Coefficient estimates and adjusted R2 for models of maximum temperature at each probe height. Results are illustrated in Fig. S1.")
-```
-
-    ## Joining, by = "probe_ht"
 
 | probe\_ht | term             | estimate | std.error | statistic | p.value | adj.r2 |
 |:----------|:-----------------|---------:|----------:|----------:|--------:|:-------|
@@ -1401,32 +226,6 @@ Coefficient estimates and adjusted R2 for models of maximum temperature
 at each probe height. Results are illustrated in Fig. S1.
 
 ## Table S4. Heating duration models summaries
-
-``` r
-sabv100_50cm_coefs <- broom::tidy(sabv100_50cm) %>% 
-  mutate(probe_ht = "50 cm") %>% 
-  select(probe_ht, everything())
-
-sabv100_25cm_coefs <- broom::tidy(sabv100_25cm) %>% 
-  mutate(probe_ht = "25 cm") %>% 
-  select(probe_ht, everything())
-
-sabv100_0cm_coefs <- broom::tidy(sabv100_0cm) %>% 
-  mutate(probe_ht = "0 cm") %>% 
-  select(probe_ht, everything())
-
-## Extract R-squared for each model
-sabv100_r2 <- as.data.frame(cbind(probe_ht, adj.r2 = round( c(summary(sabv100_0cm)$adj.r.squared, summary(sabv100_25cm)$adj.r.squared, summary(sabv100_50cm)$adj.r.squared), digits = 2)))
-
-## Combine coefficient estimates from each model
-sabv100_coefs <- rbind(sabv100_50cm_coefs, sabv100_25cm_coefs, sabv100_0cm_coefs)
-
-## Combine coefficient estimates and R-squared values into Table S4
-knitr::kable(left_join(sabv100_coefs, sabv100_r2), digits = 3, 
-             caption = "Coefficient estimates and adjusted R2 for models of heating duration (seconds above 100 ºC) at each probe height. Results are illustrated in Fig. S1")
-```
-
-    ## Joining, by = "probe_ht"
 
 | probe\_ht | term              | estimate | std.error | statistic | p.value | adj.r2 |
 |:----------|:------------------|---------:|----------:|----------:|--------:|:-------|
@@ -1449,23 +248,6 @@ Fig. S1
 
 ## Table S5. Summary of treatment and fire effects.
 
-``` r
-dat25cm %>% 
-  group_by(Treatment) %>% 
-  summarise(plots = n_distinct(Plot),
-            trees = length(tree_id),
-            treatment_effect_pct = 100*((75-trees)/75),
-            dead = sum(dead),
-            alive = sum(alive),
-            fire_effect_pct = 100*((alive - trees)/trees),
-            avg_height = mean(tree_height_cm),
-            sd_height = sd(tree_height_cm),
-            pct_survival = 100*sum(survival)/length(survival),
-            sd_pct_survival = 100*(sd(survival, na.rm = TRUE))) %>% 
-  knitr::kable(., digits = 1,
-               caption = "Summary of treatment and fire effects, tree height, and proportion survival in each treatment group. Treatment effect pre-fire is number of trees alive under each treatment relative to the number of trees in the Reference plots. Fire effect is number of trees alive after fires relative to before fires. Standard deviations (SD) of height calculated across trees and SD of survival estimated across plots.")
-```
-
 | Treatment          | plots | trees | treatment\_effect\_pct | dead | alive | fire\_effect\_pct | avg\_height | sd\_height | pct\_survival | sd\_pct\_survival |
 |:-------------------|------:|------:|-----------------------:|-----:|------:|------------------:|------------:|-----------:|--------------:|------------------:|
 | Reference          |    10 |    75 |                    0.0 |    7 |    68 |              -9.3 |       305.6 |      188.0 |          90.7 |              29.3 |
@@ -1482,21 +264,6 @@ across trees and SD of survival estimated across plots.
 
 ## Table S6. Global change model summary
 
-``` r
-smod_ht_trt_coef_plot <- plot_model(survival_ht_trt, show.values = TRUE, digits = 3, colors = "bw") +
-  scale_y_log10(limits = c(NA, NA))
-```
-
-    ## Scale for 'y' is already present. Adding another scale for 'y', which will
-    ## replace the existing scale.
-
-``` r
-smod_ht_trt_coef_plot$data %>% 
-  select(Term = term, `Estimated OR` = estimate, conf.low, conf.high, `P-value` = p.value) %>% 
-  knitr::kable(caption = "The estimates for the treatment terms are in comparison to the “Reference” treatment (no invasion or drought). Model term, estimated odds-ratio (OR), 95% confidence interval (CI) of the OR, P-value of the estimate. Model predictions are illustrated in Figure 2C.", 
-               digits = 3)
-```
-
 | Term                        | Estimated OR | conf.low | conf.high | P-value |
 |:----------------------------|-------------:|---------:|----------:|--------:|
 | tree\_height\_cm            |        1.023 |    1.008 |     1.038 |   0.003 |
@@ -1510,14 +277,6 @@ odds-ratio (OR), 95% confidence interval (CI) of the OR, P-value of the
 estimate. Model predictions are illustrated in Figure 2C.
 
 ## Table S7. Global change model predictions
-
-``` r
-gc_pred <- plot_model(survival_ht_trt, type = "pred", pred.type = "fe", show.data = F, terms = c("tree_height_cm [70, 150, 270, 340]", "Treatment"))
-gc_pred$data %>% 
-  rename(tree_height_cm = x, surv_probability = predicted, Treatment = group) %>% 
-  select(-std.error, -group_col) %>% 
-  knitr::kable(digits = 2, caption = "Predicted tree survival probability following fire from the global change model for specific values of tree height under each treatment.")
-```
 
 | tree\_height\_cm | surv\_probability | conf.low | conf.high | Treatment          |
 |-----------------:|------------------:|---------:|----------:|:-------------------|
@@ -1541,16 +300,7 @@ gc_pred$data %>%
 Predicted tree survival probability following fire from the global
 change model for specific values of tree height under each treatment.
 
-## Table S8
-
-``` r
-temp_model_coef <- plot_model(mech_model, show.values = T, colors = "bw", digits = 3)
-temp_model_coef$data$term <- c("Tree ht (cm)", "Flame ht (cm)", "Max temp (ºC)", "s >100 ºC") 
-
-temp_model_coef$data %>% 
-  select(term, estimate, conf.low, conf.high, p.value) %>% 
-  knitr::kable(digits = 3, caption = "Mechanistic model summary. Term, estimated odds ratio (OR), 95% confidence interval of the OR, P-value of the estimate. Model predictions are illustrated in Figures 2D, E, and S2.")
-```
+## Table S8. Mechanistic model summary
 
 | term          | estimate | conf.low | conf.high | p.value |
 |:--------------|---------:|---------:|----------:|--------:|
@@ -1563,25 +313,7 @@ Mechanistic model summary. Term, estimated odds ratio (OR), 95%
 confidence interval of the OR, P-value of the estimate. Model
 predictions are illustrated in Figures 2D, E, and S2.
 
-``` r
-# broom.mixed::glance(mech_model)
-# r.squaredGLMM(mech_model)
-```
-
-## Table S9
-
-``` r
-mm_predictions <- plot_model(mech_model, type = "pred", pred.type = "fe",
-                           terms = c("tree_height_cm [100,150,200,300,400,600]", "avg_flameht_cm [50,94,100,200]"))
-
-mm_predictions$data %>% 
-  filter(group %in% c("50", "100", "200"), x %in% c(100, 200, 300, 400)) %>% 
-  arrange(group) %>% 
-  rename(`Tree height (cm)` = x, `% survival probability` = predicted,
-         `Flame height (cm)` = group) %>% 
-  select(-std.error, -group_col) %>% 
-  knitr::kable(digits = 2, caption = "Mechanistic model predictions. Predicted tree survival probability from the mechanistic model for specific values of tree height and flame height. Predictions are for the mean values of maximum temperature (434 ºC) and heating duration (105 seconds).")
-```
+## Table S9. Mechanistic model predictions
 
 | Tree height (cm) | % survival probability | conf.low | conf.high | Flame height (cm) |
 |-----------------:|-----------------------:|---------:|----------:|:------------------|
@@ -1603,17 +335,7 @@ the mechanistic model for specific values of tree height and flame
 height. Predictions are for the mean values of maximum temperature (434
 ºC) and heating duration (105 seconds).
 
-## Table S10
-
-``` r
-invasion_fuel_coef <- plot_model(management_model, show.values = TRUE, digits = 3, color = "bw", ci.style = "whisker")
-invasion_fuel_coef$data$term <- c("Tree ht (cm)","Fuel load (kg)","Invasion","Fuel load*Invasion")
-
-# tab_model(management_model)
-invasion_fuel_coef$data %>% 
-  select(Term = term, `Estimated OR` = estimate, conf.low, conf.high, `P-value` = p.value) %>% 
-  knitr::kable(digits = 4, caption = "Management model summary. Term, estimated odds ratio (OR), 95% confidence interval of the OR, P-value of the estimate. Model predictions are illustrated in Figure 3.")
-```
+## Table S10. Management model summary
 
 | Term                | Estimated OR | conf.low | conf.high | P-value |
 |:--------------------|-------------:|---------:|----------:|--------:|
@@ -1626,31 +348,7 @@ Management model summary. Term, estimated odds ratio (OR), 95%
 confidence interval of the OR, P-value of the estimate. Model
 predictions are illustrated in Figure 3.
 
-``` r
-# (invasion_fuel_coef <- invasion_fuel_coef +
-#   scale_y_log10() +
-#   pred_plot_theme +
-#   ggtitle("")
-# )
-```
-
-## Table S11
-
-``` r
-surv_fuel_pred <- plot_model(
-  management_model, type = "pred", 
-  terms = c("tree_height_cm [10, 50, 100, 200, 300, 400]","veg_trt","fuels_kg [.6, .9, 1.2]"), 
-  show.data = FALSE,show.legend = FALSE, pred.type = "fe"
-  )
-
-surv_fuel_pred$data %>%
-  select(`Tree height (cm)` = x, `% survival probability` = predicted, 
-         conf.low, conf.high, Group = group,
-         `Fuel load` = facet) %>%
-  mutate(Group = ifelse(Group=="Reference", "No invasion", "Invasion")) %>%
-  arrange(`Fuel load`) %>%
-  knitr::kable(digits = 2, caption = "Table S11. Management model predictions. Average survival probability with or without invasion across a range of tree heights for three different fuel loads.")
-```
+## Table S11. Management model summary
 
 | Tree height (cm) | % survival probability | conf.low | conf.high | Group       | Fuel load       |
 |-----------------:|-----------------------:|---------:|----------:|:------------|:----------------|
@@ -1699,28 +397,7 @@ different fuel loads.
 
 ## Figure S1. Fuel load vs. maximum temperature or heating duration at each probe height
 
-``` r
-heat_fig_supp <- max_temp_pred_supp_fig +
-  xlab("") +
-  theme(strip.text = element_blank()) +
-  sabv_100_pred_supp_fig + xlab("")
-
-figS1 <- heat_fig_supp +
-  xlab(expression(paste("Fuel load (kg ", {m}^-2, ")"), sep = "")) +
-  theme(axis.title.x = element_text(hjust = -.75),
-        legend.key.height = unit(1, "line"),
-        legend.key.width = unit(.1, "cm"),
-        legend.position = c(.755, .94)) +
-  plot_annotation(tag_levels = "A") &
-  theme(plot.tag = element_text(face = "bold"))
-figS1
-```
-
 ![](drought_invasion_fire_files/figure-gfm/Figure%20S1%20max%20temp%20heating%20duration-1.png)<!-- -->
-
-``` r
-# ggsave("figures/fire_temperatures_supp_fig.pdf", figS1, height = 8, width = 7, dpi = 300)
-```
 
 Best fit lines ±95% confidence intervals (shaded) illustrating the
 relationship between fuel load and maximum temperatures (A) or heating
@@ -1733,19 +410,7 @@ invasion.
 
 ## Figure S2. Mehanistic model maximum temperature and heating duration
 
-``` r
-figS2 <- max_temp_mech_pred_fig + theme(legend.position = c(.7, .3)) + 
-  surv_sabv100_pred_fig + ylab("") + xlab("Heating duration (s)") +
-  plot_annotation(tag_levels = 'A') &
-  theme(plot.tag = element_text(face = "bold"))
-figS2
-```
-
 ![](drought_invasion_fire_files/figure-gfm/Figure%20S2%20mech_model_supp_fig-1.png)<!-- -->
-
-``` r
-# ggsave("figures/mech_model_supp_fig.pdf", figS2, width = 7, height = 3.5, dpi = 300)
-```
 
 Estimated effects ±95% confidence intervals of maximum temperature and
 heating duration from the mechanistic model that also included tree
