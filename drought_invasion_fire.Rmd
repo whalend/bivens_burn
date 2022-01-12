@@ -334,7 +334,7 @@ max_temp_pred_fig <- ggplot(maxtemp_pred_data %>%
   geom_line(data = . %>% filter(group == "Reference"), aes(x = x, y = predicted), color = "deepskyblue", show.legend = FALSE, size = .75) +
   geom_line(data = . %>% filter(group == "Invasion"), aes(x = x, y = predicted), color = "red", show.legend = FALSE, size = .75) +
   
-  geom_point(data = plots_data, 
+  geom_point(data = plots_data %>% filter(probe_ht == "25cm"), 
              aes(x = fuels_kg, y = avg_max_tempC, 
                  fill = Treatment, shape = Treatment), 
              alpha = 1, size = 1) +
@@ -371,7 +371,9 @@ max_temp_pred_supp_fig <- ggplot(maxtemp_pred_data) +
   geom_line(data = . %>% filter(group == "Reference"), aes(x = x, y = predicted), color = "deepskyblue", show.legend = FALSE, size = .75) +
   geom_line(data = . %>% filter(group == "Invasion"), aes(x = x, y = predicted), color = "red", show.legend = FALSE, size = .75) +
   
-  geom_point(data = plots_data, 
+  geom_point(data = plots_data %>% mutate(location  = case_when(probe_ht=="0cm" ~ "0 cm",
+                                                                probe_ht=="25cm"~"25 cm",
+                                                                probe_ht=="50cm" ~"50 cm")), 
              aes(x = fuels_kg, y = avg_max_tempC, 
                  fill = Treatment, shape = Treatment), 
              alpha = 1, size = 1) +
@@ -461,7 +463,9 @@ sabv_100_pred_supp_fig <- ggplot(sabv_pred_data) +
   geom_line(data = . %>% filter(group == "Reference"), aes(x = x, y = predicted), color = "deepskyblue", show.legend = FALSE, size = .75) +
   geom_line(data = . %>% filter(group == "Invasion"), aes(x = x, y = predicted), color = "red", show.legend = FALSE, size = .75) +
   
-  geom_point(data = fuels_data, 
+  geom_point(data = plots_data %>% mutate(location  = case_when(probe_ht=="0cm" ~ "0 cm",
+                                                                probe_ht=="25cm"~"25 cm",
+                                                                probe_ht=="50cm" ~"50 cm")), 
              aes(x = fuels_kg, y = avg_s_abv_100, 
                  fill = Treatment, shape = Treatment), 
              alpha = 1, size = 2) +
@@ -1257,6 +1261,85 @@ surv_fuel_pred$data %>%
   mutate(Group = ifelse(Group=="Reference", "No invasion", "Invasion")) %>%
   arrange(`Fuel load`) %>%
   knitr::kable(digits = 2, caption = "Table S11. Management model predictions. Average survival probability with or without invasion across a range of tree heights for three different fuel loads.")
+```
+
+## Tree height multiple comparison
+```{r tree height model}
+
+library(lme4)
+library(sjPlot)
+library(DHARMa)
+
+# ggsave("figures/treeht_trt_boxplot.pdf", width = 7, height = 7, dpi = 600)
+
+knitr::kable(dat25cm %>% 
+         group_by(Treatment) %>% 
+         summarise(nobs = length(tree_height_cm),
+                   avg_ht = mean(tree_height_cm),
+                   sd = sd(tree_height_cm, na.rm = T)),
+         digits = 1, caption = "Average tree height")
+
+
+tree_ht_mod <- lmer(tree_height_cm ~ Treatment + (1|Plot), data = dat25cm)
+# summary(tree_ht_mod)
+(tree_ht_mod_Anova <- car::Anova(tree_ht_mod, test.statistic = c("F")))
+
+# broom.mixed::tidy %>% 
+# broom.mixed::tidy(tree_ht_mod) %>%
+#   knitr::kable(., caption = "Tree height model results")
+
+tree_ht_mod_coefs <- plot_model(tree_ht_mod, show.values = T, color = "bw", 
+                                value.size = 6)
+
+# tree_ht_mod_coefs$data$term <- c("Drought","Invasion","Invasion X Drought")
+
+tree_ht_mod_coefs +
+  # scale_x_discrete(limits = c("Invasion X Drought", "Drought", "Invasion")) +
+  theme_classic() +
+  geom_hline(yintercept = 0, color = "grey90") +
+  ggtitle("") +
+  ylab("Est. effect on tree height (cm)") +
+  def_theme +
+  # theme(axis.text = element_text(color = "black")) +
+  NULL
+
+tab_model(tree_ht_mod)
+# MuMIn::r.squaredGLMM(tree_ht_mod)# plot random effect increase R2 over 2x
+tree_ht_multcomp <- multcomp::glht(
+  tree_ht_mod,linfct=multcomp::mcp(Treatment="Tukey")
+  )
+summary(tree_ht_multcomp)
+# plot(print(confint(tree_ht_multcomp)))
+
+th_cld <- multcomp::cld(tree_ht_multcomp)
+th_cld
+# plot(th_cld)
+# old.par <- par(mai=c(1,1,1.25,1), no.readonly = TRUE)
+
+# pairwise.t.test(dat25cm$tree_height_cm, dat25cm$Treatment)
+# pairwise.t.test(dat25cm$tree_height_cm, dat25cm$Treatment, p.adjust.method = "bonf")
+
+
+m1 <- nlme::lme(tree_height_cm ~ Treatment, random = ~1|Plot, data = dat25cm)
+# summary(m1)
+
+
+m2 <- nlme::lme(tree_height_cm ~ veg_trt + water_trt + veg_trt:water_trt, random = ~1|Plot, data = dat25cm)
+# summary(m2)
+
+# summary(m1)$coef$fixed
+# summary(m2)$coef$fixed
+
+# plot_model(tree_ht_mod, type = "pred") 
+#   invasion_color +
+#   theme_classic() +
+#   ggtitle("") +
+#   ylab("Tree height (cm)") +
+#   # xlab("Ambient - Drought") +
+#   def_theme +
+#   NULL
+
+# ggsave("figures/treeht_coef.pdf", height = 7, width = 7, dpi = 600)
 ```
 
 # Supplemental Figures

@@ -1,7 +1,7 @@
 Interacting global change drivers suppress a foundation tree species
 ================
 S.L. Flory, W.W. Dillon, D. Hiatt
-2021-06-08
+2022-01-06
 
 -   [Abstract](#abstract)
 -   [Figure 1. Treatment effects on
@@ -33,6 +33,8 @@ S.L. Flory, W.W. Dillon, D. Hiatt
         summary](#table-s10-management-model-summary)
     -   [Table S11. Management model
         summary](#table-s11-management-model-summary)
+    -   [Tree height multiple
+        comparison](#tree-height-multiple-comparison)
 -   [Supplemental Figures](#supplemental-figures)
     -   [Figure S1. Fuel load vs. maximum temperature or heating
         duration at each probe
@@ -392,6 +394,179 @@ predictions are illustrated in Figure 3.
 Table S11. Management model predictions. Average survival probability
 with or without invasion across a range of tree heights for three
 different fuel loads.
+
+## Tree height multiple comparison
+
+| Treatment          | nobs | avg\_ht |    sd |
+|:-------------------|-----:|--------:|------:|
+| Reference          |   75 |   305.6 | 188.0 |
+| Drought            |   30 |   382.3 | 156.4 |
+| Invasion           |   19 |   453.8 | 150.2 |
+| Drought + Invasion |   32 |   313.2 | 159.0 |
+
+Average tree height
+
+    ## Analysis of Deviance Table (Type II Wald F tests with Kenward-Roger df)
+    ## 
+    ## Response: tree_height_cm
+    ##                F Df Df.res  Pr(>F)  
+    ## Treatment 3.0838  3 24.195 0.04624 *
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+![](drought_invasion_fire_files/figure-gfm/tree%20height%20model-1.png)<!-- -->
+<table style="border-collapse:collapse; border:none;">
+<tr>
+<th style="border-top: double; text-align:center; font-style:normal; font-weight:bold; padding:0.2cm;  text-align:left; ">
+ 
+</th>
+<th colspan="3" style="border-top: double; text-align:center; font-style:normal; font-weight:bold; padding:0.2cm; ">
+tree\_height\_cm
+</th>
+</tr>
+<tr>
+<td style=" text-align:center; border-bottom:1px solid; font-style:italic; font-weight:normal;  text-align:left; ">
+Predictors
+</td>
+<td style=" text-align:center; border-bottom:1px solid; font-style:italic; font-weight:normal;  ">
+Estimates
+</td>
+<td style=" text-align:center; border-bottom:1px solid; font-style:italic; font-weight:normal;  ">
+CI
+</td>
+<td style=" text-align:center; border-bottom:1px solid; font-style:italic; font-weight:normal;  ">
+p
+</td>
+</tr>
+<tr>
+<td style=" padding:0.2cm; text-align:left; vertical-align:top; text-align:left; ">
+(Intercept)
+</td>
+<td style=" padding:0.2cm; text-align:left; vertical-align:top; text-align:center;  ">
+303.98
+</td>
+<td style=" padding:0.2cm; text-align:left; vertical-align:top; text-align:center;  ">
+252.68 – 355.28
+</td>
+<td style=" padding:0.2cm; text-align:left; vertical-align:top; text-align:center;  ">
+<strong>&lt;0.001
+</td>
+</tr>
+<tr>
+<td style=" padding:0.2cm; text-align:left; vertical-align:top; text-align:left; ">
+Treatment \[Drought\]
+</td>
+<td style=" padding:0.2cm; text-align:left; vertical-align:top; text-align:center;  ">
+71.34
+</td>
+<td style=" padding:0.2cm; text-align:left; vertical-align:top; text-align:center;  ">
+-20.65 – 163.32
+</td>
+<td style=" padding:0.2cm; text-align:left; vertical-align:top; text-align:center;  ">
+0.129
+</td>
+</tr>
+<tr>
+<td style=" padding:0.2cm; text-align:left; vertical-align:top; text-align:left; ">
+Treatment \[Invasion\]
+</td>
+<td style=" padding:0.2cm; text-align:left; vertical-align:top; text-align:center;  ">
+143.88
+</td>
+<td style=" padding:0.2cm; text-align:left; vertical-align:top; text-align:center;  ">
+41.56 – 246.21
+</td>
+<td style=" padding:0.2cm; text-align:left; vertical-align:top; text-align:center;  ">
+<strong>0.006</strong>
+</td>
+</tr>
+<tr>
+<td style=" padding:0.2cm; text-align:left; vertical-align:top; text-align:left; ">
+Treatment \[Drought +<br>Invasion\]
+</td>
+<td style=" padding:0.2cm; text-align:left; vertical-align:top; text-align:center;  ">
+-1.25
+</td>
+<td style=" padding:0.2cm; text-align:left; vertical-align:top; text-align:center;  ">
+-89.72 – 87.22
+</td>
+<td style=" padding:0.2cm; text-align:left; vertical-align:top; text-align:center;  ">
+0.978
+</td>
+</tr>
+<tr>
+<td colspan="4" style="font-weight:bold; text-align:left; padding-top:.8em;">
+Random Effects
+</td>
+</tr>
+<tr>
+<td style=" padding:0.2cm; text-align:left; vertical-align:top; text-align:left; padding-top:0.1cm; padding-bottom:0.1cm;">
+σ<sup>2</sup>
+</td>
+<td style=" padding:0.2cm; text-align:left; vertical-align:top; padding-top:0.1cm; padding-bottom:0.1cm; text-align:left;" colspan="3">
+27139.59
+</td>
+<tr>
+<td style=" padding:0.2cm; text-align:left; vertical-align:top; text-align:left; padding-top:0.1cm; padding-bottom:0.1cm;">
+τ<sub>00</sub> <sub>Plot</sub>
+</td>
+<td style=" padding:0.2cm; text-align:left; vertical-align:top; padding-top:0.1cm; padding-bottom:0.1cm; text-align:left;" colspan="3">
+2874.47
+</td>
+<tr>
+<td style=" padding:0.2cm; text-align:left; vertical-align:top; text-align:left; padding-top:0.1cm; padding-bottom:0.1cm;">
+ICC
+</td>
+<td style=" padding:0.2cm; text-align:left; vertical-align:top; padding-top:0.1cm; padding-bottom:0.1cm; text-align:left;" colspan="3">
+0.10
+</td>
+<tr>
+<td style=" padding:0.2cm; text-align:left; vertical-align:top; text-align:left; padding-top:0.1cm; padding-bottom:0.1cm;">
+N <sub>Plot</sub>
+</td>
+<td style=" padding:0.2cm; text-align:left; vertical-align:top; padding-top:0.1cm; padding-bottom:0.1cm; text-align:left;" colspan="3">
+32
+</td>
+<tr>
+<td style=" padding:0.2cm; text-align:left; vertical-align:top; text-align:left; padding-top:0.1cm; padding-bottom:0.1cm; border-top:1px solid;">
+Observations
+</td>
+<td style=" padding:0.2cm; text-align:left; vertical-align:top; padding-top:0.1cm; padding-bottom:0.1cm; text-align:left; border-top:1px solid;" colspan="3">
+156
+</td>
+</tr>
+<tr>
+<td style=" padding:0.2cm; text-align:left; vertical-align:top; text-align:left; padding-top:0.1cm; padding-bottom:0.1cm;">
+Marginal R<sup>2</sup> / Conditional R<sup>2</sup>
+</td>
+<td style=" padding:0.2cm; text-align:left; vertical-align:top; padding-top:0.1cm; padding-bottom:0.1cm; text-align:left;" colspan="3">
+0.078 / 0.167
+</td>
+</tr>
+</table>
+
+    ## 
+    ##   Simultaneous Tests for General Linear Hypotheses
+    ## 
+    ## Multiple Comparisons of Means: Tukey Contrasts
+    ## 
+    ## 
+    ## Fit: lmer(formula = tree_height_cm ~ Treatment + (1 | Plot), data = dat25cm)
+    ## 
+    ## Linear Hypotheses:
+    ##                                     Estimate Std. Error z value Pr(>|z|)  
+    ## Drought - Reference == 0              71.339     46.932   1.520   0.4210  
+    ## Invasion - Reference == 0            143.882     52.208   2.756   0.0294 *
+    ## Drought + Invasion - Reference == 0   -1.251     45.140  -0.028   1.0000  
+    ## Invasion - Drought == 0               72.544     59.652   1.216   0.6125  
+    ## Drought + Invasion - Drought == 0    -72.589     53.575  -1.355   0.5235  
+    ## Drought + Invasion - Invasion == 0  -145.133     58.252  -2.491   0.0599 .
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## (Adjusted p values reported -- single-step method)
+
+    ##          Reference            Drought           Invasion Drought + Invasion 
+    ##                "a"               "ab"                "b"               "ab"
 
 # Supplemental Figures
 
